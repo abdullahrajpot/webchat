@@ -8,6 +8,9 @@ const {
   getUserById
 } = require('../controllers/userController');
 
+
+
+
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/', getAllUsers);

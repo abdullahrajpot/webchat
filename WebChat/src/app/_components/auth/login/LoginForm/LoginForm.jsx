@@ -43,40 +43,40 @@ const LoginForm = () => {
     setShowPassword((prev) => !prev);
   };
 
-  async function handleLogin(data) {
-    setError("");
-    setSuccess("");
-    setLoading(true);
+async function handleLogin(data) {
+  setError("");
+  setSuccess("");
+  setLoading(true);
 
-    try {
-      const response = await axios.post("http://localhost:5001/api/users/login", data);
+  try {
+    const response = await axios.post("http://localhost:5001/api/users/login", data);
 
-      if (response.data.user && response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+    if (response.data.user && response.data.token) {
+      // Store in AuthProvider
+      setAuthLogin(response.data.user, response.data.token);
 
-        setAuthLogin();
-        toast.success("User Login Successfully");
-        setSuccess("Login successful! Redirecting...");
+      toast.success("User Login Successfully");
+      setSuccess("Login successful! Redirecting...");
 
-        setTimeout(() => {
-          if (response.data.user.role === "admin") {
-            navigate("/admindashboard");
-          } else {
-            navigate("/");
-          }
-        }, 1000);
-      } else {
-        setError("Login failed: No user/token returned.");
-        toast.error("Login failed");
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || "Login failed.");
+      setTimeout(() => {
+        if (response.data.user.role === "admin") {
+          navigate("/admindashboard");
+        } else {
+          navigate("/");
+        }
+      }, 1000);
+    } else {
+      setError("Login failed: No user/token returned.");
       toast.error("Login failed");
-    } finally {
-      setLoading(false);
     }
+  } catch (err) {
+    setError(err.response?.data?.error || "Login failed.");
+    toast.error("Login failed");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   return (
     <JumboForm

@@ -1,6 +1,6 @@
 import Login1 from "@app/pages/auth/login1";
 import { createBrowserRouter } from "react-router-dom";
-import SamplePage from "@app/pages";
+import SamplePage from "@app/pages/UserDashboard";
 import { StretchedLayout } from "@app/_layouts/StretchedLayout";
 import { SoloLayout } from "@app/_layouts/SoloLayout"; 
 import withAuth from "@app/_hoc/withAuth";
@@ -10,21 +10,30 @@ import Signup1 from "@app/pages/auth/signup1";
 import GuestRoute from "@app/_hoc/GuestRoute";
 import Home from "@app/pages/AdminDashboard/Home/Home";
 import AssignTask from "@app/pages/AdminDashboard/AssignTask/AssignTask";
+import { ContentLayout } from "@app/_layouts/ContentLayout";
+import UserHome from "@app/pages/UserDashboard/UserDashboard/UserDashboard";
+import UserDashboard from "@app/pages/UserDashboard/UserDashboard/UserDashboard";
+import Chat from "@app/pages/AdminDashboard/Chat/Chat";
 
 
 const routes = [
   {
     path: "/",
-    element: <StretchedLayout />,
+    element: <SoloLayout />,
     children: [
       {
         path: "/",
         element: <Page Component={SamplePage} hoc={withAuth} />,
       },
-      // {
-      //   path: "dashboard",
-      //   element: <Page Component={DashboardPage} hoc={withAuth} />,
-      // },
+      {
+        path: "/userdashboard",
+        element: <Page Component={UserDashboard} hoc={withAuth} />,
+      },
+      {
+      path: "/chat",
+      element: <Page Component={Chat} hoc={withAuth} />,
+    },
+  
       
     ],
   },
@@ -40,6 +49,10 @@ const routes = [
        {
         path: "/admindashboard/assign-task",
         element: <Page Component={AssignTask} hoc={withAuth} />,
+      },
+      {
+        path: "/admindashboard/chat",
+        element: <Page Component={Chat} hoc={withAuth} />,
       },
     
       

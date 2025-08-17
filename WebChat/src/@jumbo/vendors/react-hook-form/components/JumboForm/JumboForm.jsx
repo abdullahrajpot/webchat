@@ -69,7 +69,9 @@ const JumboForm = ({
           entries.forEach(([key, value]) => {
             changedFields[key] = value;
           });
-          onChange(changedFields);
+          if (onChange && typeof onChange === "function") {
+            onChange(changedFields);
+          }
         });
       }
     }
