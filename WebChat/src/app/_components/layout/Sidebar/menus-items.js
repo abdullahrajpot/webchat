@@ -14,7 +14,12 @@ export function getMenus() {
          {
           path: "/admindashboard/assign-task",
           label: "Assign-Task",
-          icon: "sample",
+          icon: "task",
+        },
+        {
+          path: "/admindashboard/chat",
+          label: "Chat",
+          icon: "chat",
         },
       ],
     },

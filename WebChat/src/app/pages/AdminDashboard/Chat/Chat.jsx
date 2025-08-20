@@ -1327,66 +1327,66 @@ const Chat = () => {
     };
 
     const handleFileDownload = async (fileUrl, fileName) => {
-    try {
-        if (!fileUrl) {
-            setError('File URL not available for download');
-            console.error('File download failed: fileUrl is', fileUrl);
-            return;
-        }
-
-        if (!fileName) {
-            setError('File name not available');
-            console.error('File download failed: fileName is', fileName);
-            return;
-        }
-
-        console.log('Downloading file:', { fileUrl, fileName });
-        
-        // Fix the URL construction logic
-        let downloadUrl;
-        
-        if (fileUrl.startsWith('/uploads/')) {
-            // Extract just the filename from the path
-            const filename = fileUrl.split('/').pop();
-            downloadUrl = `/api/chat/files/${filename}`;
-        } else if (fileUrl.startsWith('/api/')) {
-            // If it already starts with /api/, use it as is
-            downloadUrl = fileUrl;
-        } else {
-            // Assume it's just a filename
-            downloadUrl = `/api/chat/files/${fileUrl}`;
-        }
-
-        console.log('Download URL:', `${API_BASE_URL}${downloadUrl}`);
-
-        const response = await fetch(`${API_BASE_URL}${downloadUrl}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+        try {
+            if (!fileUrl) {
+                setError('File URL not available for download');
+                console.error('File download failed: fileUrl is', fileUrl);
+                return;
             }
-        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Download response error:', errorText);
-            throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+            if (!fileName) {
+                setError('File name not available');
+                console.error('File download failed: fileName is', fileName);
+                return;
+            }
+
+            console.log('Downloading file:', { fileUrl, fileName });
+            
+            // Fix the URL construction logic
+            let downloadUrl;
+            
+            if (fileUrl.startsWith('/uploads/')) {
+                // Extract just the filename from the path
+                const filename = fileUrl.split('/').pop();
+                downloadUrl = `/api/chat/files/${filename}`;
+            } else if (fileUrl.startsWith('/api/')) {
+                // If it already starts with /api/, use it as is
+                downloadUrl = fileUrl;
+            } else {
+                // Assume it's just a filename
+                downloadUrl = `/api/chat/files/${fileUrl}`;
+            }
+
+            console.log('Download URL:', `${API_BASE_URL}${downloadUrl}`);
+
+            const response = await fetch(`${API_BASE_URL}${downloadUrl}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Download response error:', errorText);
+                throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            console.log('File downloaded successfully');
+        } catch (error) {
+            console.error('Download error:', error);
+            setError(`Download failed: ${error.message}`);
         }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        console.log('File downloaded successfully');
-    } catch (error) {
-        console.error('Download error:', error);
-        setError(`Download failed: ${error.message}`);
-    }
-};
+    };
 
     const handleCreateGroup = async () => {
         if (!groupName.trim() || selectedMembers.length === 0) return;
@@ -1432,10 +1432,10 @@ const Chat = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'online': return 'success';
-            case 'away': return 'warning';
-            case 'busy': return 'error';
-            default: return 'default';
+            case 'online': return '#4caf50';
+            case 'away': return '#ff9800';
+            case 'busy': return '#f44336';
+            default: return '#9e9e9e';
         }
     };
 
@@ -1487,12 +1487,15 @@ const Chat = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 height: '100vh',
-                gap: 2
+                gap: 2,
+                bgcolor: '#f8fafc'
             }}>
-                <CircularProgress />
-                <Typography>Loading chat application...</Typography>
+                <CircularProgress size={40} thickness={4} sx={{ color: '#6366f1' }} />
+                <Typography variant="h6" sx={{ color: '#64748b', fontWeight: 500 }}>
+                    Loading chat application...
+                </Typography>
                 {connectionStatus === 'connecting' && (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>
                         Connecting to server...
                     </Typography>
                 )}
@@ -1501,7 +1504,12 @@ const Chat = () => {
     }
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+        <Box sx={{ 
+            display: 'flex', 
+            height: '100vh', 
+            bgcolor: '#f8fafc',
+            fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif'
+        }}>
             {/* Error Alert */}
             {error && (
                 <Alert
@@ -1509,14 +1517,17 @@ const Chat = () => {
                     onClose={() => setError('')}
                     sx={{
                         position: 'fixed',
-                        top: 16,
-                        right: 16,
+                        top: 20,
+                        right: 20,
                         zIndex: 9999,
-                        maxWidth: 400
+                        maxWidth: 400,
+                        borderRadius: 3,
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
                     }}
                     action={
                         <Button
                             size="small"
+                            sx={{ fontWeight: 600 }}
                             onClick={async () => {
                                 setError('');
                                 setLoading(true);
@@ -1543,85 +1554,126 @@ const Chat = () => {
             {/* Connection Status */}
             <Box sx={{
                 position: 'fixed',
-                bottom: 16,
-                left: 16,
+                bottom: 20,
+                left: 20,
                 zIndex: 1000,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1
+                gap: 1,
+                bgcolor: 'white',
+                px: 2,
+                py: 1,
+                borderRadius: 2,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
             }}>
-                <Badge
-                    variant="dot"
-                    color={
-                        connectionStatus === 'connected' ? 'success' :
-                            connectionStatus === 'error' ? 'error' : 'warning'
-                    }
-                >
-                    <Typography variant="caption" color="text.secondary">
-                        {connectionStatus === 'connected' ? 'Connected' :
-                            connectionStatus === 'error' ? 'Connection Error' : 'Disconnected'}
-                    </Typography>
-                </Badge>
+                <Box
+                    sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        bgcolor: connectionStatus === 'connected' ? '#10b981' :
+                                 connectionStatus === 'error' ? '#ef4444' : '#f59e0b'
+                    }}
+                />
+                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+                    {connectionStatus === 'connected' ? 'Connected' :
+                        connectionStatus === 'error' ? 'Connection Error' : 'Disconnected'}
+                </Typography>
             </Box>
 
             {/* Sidebar */}
-            <Paper elevation={3} sx={{ width: 360, display: 'flex', flexDirection: 'column' }}>
+            <Paper elevation={0} sx={{ 
+                width: 380, 
+                display: 'flex', 
+                flexDirection: 'column',
+                bgcolor: 'white',
+                borderRight: '1px solid #e2e8f0'
+            }}>
                 {/* Header */}
-                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>{user.name.charAt(0)}</Avatar>
+                <Box sx={{ p: 3, borderBottom: '1px solid #f1f5f9' }}>
+                    <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 3 }}>
+                        <Avatar sx={{ 
+                            bgcolor: '#6366f1', 
+                            width: 48, 
+                            height: 48,
+                            fontSize: '1.25rem',
+                            fontWeight: 600
+                        }}>
+                            {user.name.charAt(0).toUpperCase()}
+                        </Avatar>
                         <Box>
-                            <Typography variant="subtitle1" fontWeight="medium">
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', mb: 0.5 }}>
                                 {user.name}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {user.role === 'admin' ? 'Admin' : 'User'}
+                            <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                {user.role === 'admin' ? 'Administrator' : 'User'}
                             </Typography>
                         </Box>
                     </Stack>
                     <TextField
                         fullWidth
-                        placeholder="Search here..."
+                        placeholder="Search conversations..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon />
+                                    <SearchIcon sx={{ color: '#94a3b8' }} />
                                 </InputAdornment>
                             ),
-                            sx: { borderRadius: 2 }
+                            sx: { 
+                                borderRadius: 3,
+                                bgcolor: '#f8fafc',
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    border: 'none'
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    border: 'none'
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    border: '2px solid #6366f1'
+                                }
+                            }
                         }}
                     />
                 </Box>
 
                 {/* Tabs */}
-                <Box sx={{ display: 'flex', borderBottom: 1, borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', px: 3, mb: 2 }}>
                     <Button
                         fullWidth
                         onClick={() => setActiveTab(0)}
                         sx={{
-                            borderRadius: 0,
-                            borderBottom: activeTab === 0 ? 2 : 0,
-                            borderColor: 'primary.main',
-                            color: activeTab === 0 ? 'primary.main' : 'text.secondary',
-                            bgcolor: activeTab === 0 ? 'primary.light' : 'transparent'
+                            borderRadius: 2,
+                            mr: 1,
+                            py: 1.5,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            bgcolor: activeTab === 0 ? '#6366f1' : 'transparent',
+                            color: activeTab === 0 ? 'white' : '#64748b',
+                            '&:hover': {
+                                bgcolor: activeTab === 0 ? '#5b21b6' : '#f1f5f9'
+                            }
                         }}
                     >
-                        CHATS ({filteredGroups.length})
+                        Chats ({filteredGroups.length})
                     </Button>
                     <Button
                         fullWidth
                         onClick={() => setActiveTab(1)}
                         sx={{
-                            borderRadius: 0,
-                            borderBottom: activeTab === 1 ? 2 : 0,
-                            borderColor: 'primary.main',
-                            color: activeTab === 1 ? 'primary.main' : 'text.secondary',
-                            bgcolor: activeTab === 1 ? 'primary.light' : 'transparent'
+                            borderRadius: 2,
+                            py: 1.5,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            bgcolor: activeTab === 1 ? '#6366f1' : 'transparent',
+                            color: activeTab === 1 ? 'white' : '#64748b',
+                            '&:hover': {
+                                bgcolor: activeTab === 1 ? '#5b21b6' : '#f1f5f9'
+                            }
                         }}
                     >
-                        CONTACTS ({filteredUsers.length})
+                        Contacts ({filteredUsers.length})
                     </Button>
                 </Box>
 
@@ -1630,82 +1682,117 @@ const Chat = () => {
                     {activeTab === 0 && (
                         <>
                             {/* Group List */}
-                            <Box sx={{ height: 'calc(100% - 120px)', overflowY: 'auto' }}>
+                            <Box sx={{ height: 'calc(100% - 120px)', overflowY: 'auto', px: 2 }}>
                                 {filteredGroups.length === 0 ? (
-                                    <Box sx={{ p: 3, textAlign: 'center' }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {error ? 'Failed to load groups' : 'No groups found'}
+                                    <Box sx={{ p: 4, textAlign: 'center' }}>
+                                        <Typography variant="h6" sx={{ color: '#94a3b8', mb: 1 }}>
+                                            💬
+                                        </Typography>
+                                        <Typography variant="body1" sx={{ color: '#64748b', mb: 2 }}>
+                                            {error ? 'Failed to load groups' : 'No conversations yet'}
                                         </Typography>
                                         {user.role === 'admin' && !error && (
                                             <Button
-                                                variant="text"
+                                                variant="outlined"
                                                 startIcon={<AddIcon />}
                                                 onClick={() => setCreateGroupDialog(true)}
-                                                sx={{ mt: 1 }}
+                                                sx={{ 
+                                                    borderRadius: 2,
+                                                    textTransform: 'none',
+                                                    fontWeight: 500
+                                                }}
                                             >
                                                 Create your first group
                                             </Button>
                                         )}
                                     </Box>
                                 ) : (
-                                    <List>
-                                        {filteredGroups.map((group) => (
-                                            <ListItemButton
-                                                key={group.id}
-                                                selected={selectedChat?.id === group.id}
-                                                onClick={() => {
-                                                    setSelectedChat(group);
-                                                    joinGroup(group.id);
-                                                }}
-                                                sx={{
-                                                    '&.Mui-selected': {
-                                                        bgcolor: 'primary.light',
-                                                        borderRight: 2,
-                                                        borderColor: 'primary.main'
-                                                    }
-                                                }}
-                                            >
-                                                <ListItemAvatar>
-                                                    <Avatar sx={{ bgcolor: 'primary.light' }}>
-                                                        <GroupsIcon />
-                                                    </Avatar>
-                                                </ListItemAvatar>
-                                                <ListItemText
-                                                    primary={
-                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                            <Typography fontWeight="medium">
-                                                                {group.name}
+                                    <List sx={{ p: 0 }}>
+                                        {filteredGroups.map((group) => {
+                                            const lastMessage = group.messages[group.messages.length - 1];
+                                            return (
+                                                <ListItemButton
+                                                    key={group.id}
+                                                    selected={selectedChat?.id === group.id}
+                                                    onClick={() => {
+                                                        setSelectedChat(group);
+                                                        joinGroup(group.id);
+                                                    }}
+                                                    sx={{
+                                                        borderRadius: 3,
+                                                        mb: 1,
+                                                        py: 2,
+                                                        px: 2,
+                                                        '&.Mui-selected': {
+                                                            bgcolor: '#ede9fe',
+                                                            '&:hover': {
+                                                                bgcolor: '#ddd6fe'
+                                                            }
+                                                        },
+                                                        '&:hover': {
+                                                            bgcolor: '#f8fafc'
+                                                        }
+                                                    }}
+                                                >
+                                                    <ListItemAvatar sx={{ minWidth: 60 }}>
+                                                        <Avatar sx={{ 
+                                                            bgcolor: '#e0e7ff', 
+                                                            color: '#6366f1',
+                                                            width: 44,
+                                                            height: 44
+                                                        }}>
+                                                            <GroupsIcon />
+                                                        </Avatar>
+                                                    </ListItemAvatar>
+                                                    <ListItemText
+                                                        primary={
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                                                                    {group.name}
+                                                                </Typography>
+                                                                <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                                                                    {formatTime(lastMessage?.timestamp)}
+                                                                </Typography>
+                                                            </Box>
+                                                        }
+                                                        secondary={
+                                                            <Typography
+                                                                variant="body2"
+                                                                sx={{ color: '#64748b' }}
+                                                                noWrap
+                                                            >
+                                                                {lastMessage?.content || 'No messages yet'}
                                                             </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                {formatTime(group.messages[group.messages.length - 1]?.timestamp)}
-                                                            </Typography>
-                                                        </Box>
-                                                    }
-                                                    secondary={
-                                                        <Typography
-                                                            variant="body2"
-                                                            color="text.secondary"
-                                                            noWrap
-                                                        >
-                                                            {group.messages[group.messages.length - 1]?.content || 'No messages yet'}
-                                                        </Typography>
-                                                    }
-                                                />
-                                            </ListItemButton>
-                                        ))}
+                                                        }
+                                                    />
+                                                </ListItemButton>
+                                            );
+                                        })}
                                     </List>
                                 )}
                             </Box>
 
                             {/* Create Group Button (only for admin) */}
                             {user.role === 'admin' && (
-                                <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                                <Box sx={{ p: 3, borderTop: '1px solid #f1f5f9' }}>
                                     <Button
                                         fullWidth
                                         variant="outlined"
                                         startIcon={<AddIcon />}
                                         onClick={() => setCreateGroupDialog(true)}
-                                        sx={{ borderRadius: 2, borderStyle: 'dashed' }}
+                                        sx={{ 
+                                            borderRadius: 3, 
+                                            py: 1.5,
+                                            border: '2px dashed #cbd5e1',
+                                            color: '#64748b',
+                                            fontWeight: 500,
+                                            textTransform: 'none',
+                                            '&:hover': {
+                                                border: '2px dashed #6366f1',
+                                                color: '#6366f1',
+                                                bgcolor: '#fafaff'
+                                            }
+                                        }}
                                     >
                                         Create New Group
                                     </Button>
@@ -1715,54 +1802,90 @@ const Chat = () => {
                     )}
 
                     {activeTab === 1 && (
-                        <Box sx={{ height: '100%', overflowY: 'auto' }}>
+                        <Box sx={{ height: '100%', overflowY: 'auto', px: 2 }}>
                             {filteredUsers.length === 0 ? (
-                                <Box sx={{ p: 3, textAlign: 'center' }}>
-                                    <Typography variant="body2" color="text.secondary">
+                                <Box sx={{ p: 4, textAlign: 'center' }}>
+                                    <Typography variant="h6" sx={{ color: '#94a3b8', mb: 1 }}>
+                                        👥
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ color: '#64748b' }}>
                                         {searchTerm ? 'No users found matching your search' :
                                             error ? 'Failed to load users' : 'No users available'}
                                     </Typography>
                                 </Box>
                             ) : (
-                                <List>
-                                    {filteredUsers.map((user) => (
-                                        <ListItem key={user.id}>
-                                            <ListItemAvatar>
-                                                <Badge
-                                                    overlap="circular"
-                                                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                                    variant="dot"
-                                                    color={getStatusColor(user.status)}
-                                                >
-                                                    <Avatar>{user.name.charAt(0)}</Avatar>
-                                                </Badge>
+                                <List sx={{ p: 0 }}>
+                                    {filteredUsers.map((contact) => (
+                                        <ListItemButton
+                                            key={contact.id}
+                                            sx={{
+                                                py: 2.5,
+                                                px: 2,
+                                                mb: 1,
+                                                borderRadius: 3,
+                                                '&:hover': {
+                                                    bgcolor: '#f8fafc'
+                                                }
+                                            }}
+                                        >
+                                            <ListItemAvatar sx={{ minWidth: 60 }}>
+                                                <Box sx={{ position: 'relative' }}>
+                                                    <Avatar 
+                                                        sx={{ 
+                                                            width: 44, 
+                                                            height: 44,
+                                                            bgcolor: '#f1f5f9',
+                                                            color: '#475569',
+                                                            fontSize: '1.1rem',
+                                                            fontWeight: 600
+                                                        }}
+                                                    >
+                                                        {contact.name.charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                    <Box
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            bottom: 2,
+                                                            right: 2,
+                                                            width: 12,
+                                                            height: 12,
+                                                            borderRadius: '50%',
+                                                            bgcolor: getStatusColor(contact.status),
+                                                            border: '2px solid white',
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    />
+                                                </Box>
                                             </ListItemAvatar>
                                             <ListItemText
                                                 primary={
-                                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                                        <Typography variant="subtitle2">
-                                                            {user.name}
-                                                        </Typography>
-                                                        <Chip
-                                                            label="user"
-                                                            size="small"
-                                                            variant="outlined"
-                                                            sx={{ fontSize: '0.7rem', height: '18px' }}
-                                                        />
-                                                    </Stack>
+                                                    <Typography 
+                                                        variant="subtitle1" 
+                                                        sx={{ 
+                                                            fontWeight: 600,
+                                                            color: '#1e293b',
+                                                            mb: 0.5
+                                                        }}
+                                                    >
+                                                        {contact.name}
+                                                    </Typography>
                                                 }
                                                 secondary={
-                                                    <Box>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            {user.email}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            Status: {user.status || 'offline'}
-                                                        </Typography>
-                                                    </Box>
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        sx={{ 
+                                                            color: '#64748b',
+                                                            fontSize: '0.875rem'
+                                                        }}
+                                                    >
+                                                        {contact.status === 'online' ? 'Active now' :
+                                                         contact.status === 'away' ? 'Away' :
+                                                         contact.status === 'busy' ? 'Busy' : 'Offline'}
+                                                    </Typography>
                                                 }
+                                                sx={{ m: 0 }}
                                             />
-                                        </ListItem>
+                                        </ListItemButton>
                                     ))}
                                 </List>
                             )}
@@ -1772,58 +1895,93 @@ const Chat = () => {
             </Paper>
 
             {/* Chat Area */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: 'white' }}>
                 {selectedChat ? (
                     <>
                         {/* Chat Header */}
-                        <Paper elevation={0} sx={{ p: 2, display: 'flex', alignItems: 'center', borderBottom: 1, borderColor: 'divider' }}>
-                            <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
+                        <Paper elevation={0} sx={{ 
+                            p: 3, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            borderBottom: '1px solid #f1f5f9',
+                            bgcolor: 'white'
+                        }}>
+                            <Avatar sx={{ 
+                                mr: 3, 
+                                bgcolor: '#e0e7ff',
+                                color: '#6366f1',
+                                width: 48,
+                                height: 48
+                            }}>
                                 {selectedChat.type === 'group' ? <GroupsIcon /> : selectedChat.name.charAt(0)}
                             </Avatar>
                             <Box sx={{ flex: 1 }}>
-                                <Typography variant="subtitle1" fontWeight="medium">
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', mb: 0.5 }}>
                                     {selectedChat.name}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" sx={{ color: '#64748b' }}>
                                     {selectedChat.type === 'group'
                                         ? `${selectedChat.members?.length || 0} members`
                                         : 'Online'}
                                 </Typography>
                             </Box>
                             <Stack direction="row" spacing={1}>
-                                <IconButton>
-                                    <VideoIcon />
+                                <IconButton sx={{ 
+                                    bgcolor: '#f8fafc',
+                                    '&:hover': { bgcolor: '#f1f5f9' }
+                                }}>
+                                    <VideocamIcon sx={{ color: '#64748b' }} />
                                 </IconButton>
-                                <IconButton>
-                                    <CallIcon />
+                                <IconButton sx={{ 
+                                    bgcolor: '#f8fafc',
+                                    '&:hover': { bgcolor: '#f1f5f9' }
+                                }}>
+                                    <CallIcon sx={{ color: '#64748b' }} />
                                 </IconButton>
-                                <IconButton onClick={handleMenuOpen}>
-                                    <MoreVertIcon />
+                                <IconButton onClick={handleMenuOpen} sx={{ 
+                                    bgcolor: '#f8fafc',
+                                    '&:hover': { bgcolor: '#f1f5f9' }
+                                }}>
+                                    <MoreVertIcon sx={{ color: '#64748b' }} />
                                 </IconButton>
                                 <Menu
                                     anchorEl={anchorEl}
                                     open={Boolean(anchorEl)}
                                     onClose={handleMenuClose}
+                                    PaperProps={{
+                                        elevation: 8,
+                                        sx: {
+                                            borderRadius: 2,
+                                            mt: 1,
+                                            minWidth: 180
+                                        }
+                                    }}
                                 >
-                                    <MenuItem onClick={handleMenuClose}>
+                                    <MenuItem onClick={handleMenuClose} sx={{ py: 1.5 }}>
                                         <ListItemIcon>
-                                            <InfoIcon fontSize="small" />
+                                            <InfoIcon fontSize="small" sx={{ color: '#64748b' }} />
                                         </ListItemIcon>
-                                        <ListItemText>Chat Info</ListItemText>
+                                        <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 500 } }}>
+                                            Chat Info
+                                        </ListItemText>
                                     </MenuItem>
-                                    <MenuItem onClick={handleMenuClose}>
+                                    <MenuItem onClick={handleMenuClose} sx={{ py: 1.5 }}>
                                         <ListItemIcon>
-                                            <SettingsIcon fontSize="small" />
+                                            <SettingsIcon fontSize="small" sx={{ color: '#64748b' }} />
                                         </ListItemIcon>
-                                        <ListItemText>Settings</ListItemText>
+                                        <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 500 } }}>
+                                            Settings
+                                        </ListItemText>
                                     </MenuItem>
                                     {isAdmin && [
-                                        <Divider key="divider" />,
-                                        <MenuItem key="delete" onClick={handleMenuClose} sx={{ color: 'error.main' }}>
+                                        <Divider key="divider" sx={{ my: 1 }} />,
+                                        <MenuItem key="delete" onClick={handleMenuClose} sx={{ py: 1.5, color: '#ef4444' }}>
                                             <ListItemIcon>
-                                                <DeleteIcon fontSize="small" color="error" />
+                                                <DeleteIcon fontSize="small" sx={{ color: '#ef4444' }} />
                                             </ListItemIcon>
-                                            <ListItemText>Delete Chat</ListItemText>
+                                            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 500 } }}>
+                                                Delete Chat
+                                            </ListItemText>
                                         </MenuItem>
                                     ]}
                                 </Menu>
@@ -1834,10 +1992,10 @@ const Chat = () => {
                         <Box sx={{
                             flex: 1,
                             overflowY: 'auto',
-                            p: 2,
-                            background: 'linear-gradient(135deg, #f5f7fa 0%, #ffffff 50%, #f3f4f6 100%)'
+                            p: 3,
+                            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%)'
                         }}>
-                            <Stack spacing={2}>
+                            <Stack spacing={3}>
                                 {selectedChat.messages?.map((msg) => {
                                     const isOwnMessage = msg.senderId === user.id;
                                     const sender = users.find(u => u.id === msg.senderId) ||
@@ -1850,48 +2008,60 @@ const Chat = () => {
                                                 display: 'flex',
                                                 justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
                                                 alignItems: 'flex-end',
-                                                gap: 1
+                                                gap: 2
                                             }}
                                         >
                                             {!isOwnMessage && (
-                                                <Avatar sx={{ width: 32, height: 32 }}>
-                                                    {sender?.name?.charAt(0) || '?'}
+                                                <Avatar sx={{ 
+                                                    width: 36, 
+                                                    height: 36,
+                                                    bgcolor: '#f1f5f9',
+                                                    color: '#475569',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {sender?.name?.charAt(0).toUpperCase() || '?'}
                                                 </Avatar>
                                             )}
                                             <Box sx={{ maxWidth: '70%' }}>
                                                 {!isOwnMessage && sender && (
-                                                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                                    <Typography variant="caption" sx={{ 
+                                                        ml: 2, 
+                                                        color: '#64748b',
+                                                        fontWeight: 500
+                                                    }}>
                                                         {sender.name}
                                                     </Typography>
                                                 )}
                                                 <Paper
                                                     elevation={0}
                                                     sx={{
-                                                        p: 1.5,
-                                                        borderRadius: 2,
-                                                        bgcolor: isOwnMessage ? 'primary.main' : 'background.paper',
-                                                        color: isOwnMessage ? 'primary.contrastText' : 'text.primary',
-                                                        borderTopLeftRadius: isOwnMessage ? 12 : 0,
-                                                        borderTopRightRadius: isOwnMessage ? 0 : 12
+                                                        p: 2,
+                                                        mt: 0.5,
+                                                        borderRadius: 3,
+                                                        bgcolor: isOwnMessage ? '#6366f1' : 'white',
+                                                        color: isOwnMessage ? 'white' : '#1e293b',
+                                                        borderTopLeftRadius: isOwnMessage ? 16 : 4,
+                                                        borderTopRightRadius: isOwnMessage ? 4 : 16,
+                                                        boxShadow: isOwnMessage ? '0 4px 20px rgba(99, 102, 241, 0.2)' : '0 2px 10px rgba(0,0,0,0.08)'
                                                     }}
                                                 >
                                                     {msg.type === 'text' ? (
-                                                        <Typography>{msg.content}</Typography>
+                                                        <Typography sx={{ fontWeight: 400, lineHeight: 1.5 }}>
+                                                            {msg.content}
+                                                        </Typography>
                                                     ) : msg.type === 'file' ? (
                                                         <Box>
-                                                            {/* Debug info */}
-                                                            {console.log('Rendering file message:', msg)}
-                                                            
                                                             {/* Show image preview if it's an image */}
                                                             {isPreviewableImage(msg.fileType, msg.fileName) && msg.fileUrl && (
-                                                                <Box sx={{ mb: 1, maxWidth: 300 }}>
+                                                                <Box sx={{ mb: 2, maxWidth: 300 }}>
                                                                     <img
                                                                         src={`${API_BASE_URL}${msg.fileUrl}`}
                                                                         alt={msg.fileName}
                                                                         style={{
                                                                             width: '100%',
                                                                             height: 'auto',
-                                                                            borderRadius: 8,
+                                                                            borderRadius: 12,
                                                                             cursor: 'pointer',
                                                                             maxHeight: 200,
                                                                             objectFit: 'cover'
@@ -1905,13 +2075,21 @@ const Chat = () => {
                                                             )}
 
                                                             {/* File info */}
-                                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                                {getFileIcon(msg.fileType, msg.fileName)}
+                                                            <Stack direction="row" spacing={2} alignItems="center">
+                                                                <Box sx={{ 
+                                                                    p: 1.5,
+                                                                    borderRadius: 2,
+                                                                    bgcolor: isOwnMessage ? 'rgba(255,255,255,0.15)' : '#f8fafc'
+                                                                }}>
+                                                                    {getFileIcon(msg.fileType, msg.fileName)}
+                                                                </Box>
                                                                 <Box sx={{ flex: 1 }}>
-                                                                    <Typography variant="body2" fontWeight="medium">
+                                                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                                                                         {msg.fileName}
                                                                     </Typography>
-                                                                    <Typography variant="caption" color="text.secondary">
+                                                                    <Typography variant="caption" sx={{ 
+                                                                        color: isOwnMessage ? 'rgba(255,255,255,0.8)' : '#64748b' 
+                                                                    }}>
                                                                         {msg.fileSize} • {msg.fileType || 'file'}
                                                                     </Typography>
                                                                 </Box>
@@ -1920,13 +2098,13 @@ const Chat = () => {
                                                                     onClick={() => handleFileDownload(msg.fileUrl, msg.fileName)}
                                                                     disabled={!msg.fileUrl}
                                                                     sx={{
-                                                                        bgcolor: isOwnMessage ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                                                                        bgcolor: isOwnMessage ? 'rgba(255,255,255,0.15)' : '#f8fafc',
                                                                         '&:hover': {
-                                                                            bgcolor: isOwnMessage ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                                                                            bgcolor: isOwnMessage ? 'rgba(255,255,255,0.25)' : '#f1f5f9'
                                                                         }
                                                                     }}
                                                                 >
-                                                                    <DownloadIcon />
+                                                                    <DownloadIcon sx={{ fontSize: '1rem' }} />
                                                                 </IconButton>
                                                             </Stack>
                                                         </Box>
@@ -1938,11 +2116,12 @@ const Chat = () => {
                                                 </Paper>
                                                 <Typography
                                                     variant="caption"
-                                                    color="text.secondary"
                                                     sx={{
                                                         display: 'block',
                                                         textAlign: isOwnMessage ? 'right' : 'left',
-                                                        mt: 0.5
+                                                        mt: 1,
+                                                        ml: isOwnMessage ? 0 : 2,
+                                                        color: '#94a3b8'
                                                     }}
                                                 >
                                                     {formatTime(msg.timestamp)}
@@ -1956,8 +2135,12 @@ const Chat = () => {
                         </Box>
 
                         {/* Message Input */}
-                        <Paper elevation={0} sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-                            <Stack direction="row" spacing={1} alignItems="center">
+                        <Paper elevation={0} sx={{ 
+                            p: 3, 
+                            borderTop: '1px solid #f1f5f9',
+                            bgcolor: 'white'
+                        }}>
+                            <Stack direction="row" spacing={2} alignItems="center">
                                 <TextField
                                     fullWidth
                                     placeholder="Type a message..."
@@ -1967,7 +2150,7 @@ const Chat = () => {
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
-                                                <IconButton>
+                                                <IconButton sx={{ color: '#94a3b8' }}>
                                                     <EmojiIcon />
                                                 </IconButton>
                                             </InputAdornment>
@@ -1983,23 +2166,44 @@ const Chat = () => {
                                                 <IconButton
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={loading}
+                                                    sx={{ color: '#94a3b8' }}
                                                 >
                                                     <AttachFileIcon />
                                                 </IconButton>
                                             </InputAdornment>
                                         ),
-                                        sx: { borderRadius: 4 }
+                                        sx: { 
+                                            borderRadius: 4,
+                                            bgcolor: '#f8fafc',
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                border: 'none'
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                border: 'none'
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                border: '2px solid #6366f1'
+                                            }
+                                        }
                                     }}
                                 />
                                 <IconButton
-                                    color="primary"
                                     disabled={!message.trim()}
                                     onClick={handleSendMessage}
                                     sx={{
-                                        bgcolor: 'primary.main',
-                                        color: 'primary.contrastText',
-                                        '&:hover': { bgcolor: 'primary.dark' },
-                                        '&.Mui-disabled': { bgcolor: 'grey.300' }
+                                        bgcolor: '#6366f1',
+                                        color: 'white',
+                                        width: 48,
+                                        height: 48,
+                                        '&:hover': { 
+                                            bgcolor: '#5b21b6',
+                                            transform: 'scale(1.05)'
+                                        },
+                                        '&.Mui-disabled': { 
+                                            bgcolor: '#cbd5e1',
+                                            color: '#94a3b8'
+                                        },
+                                        transition: 'all 0.2s ease'
                                     }}
                                 >
                                     <SendIcon />
@@ -2013,24 +2217,54 @@ const Chat = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        bgcolor: 'background.paper'
+                        bgcolor: 'white'
                     }}>
-                        <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
-                            <Typography variant="h3" sx={{ mb: 2 }}>💬</Typography>
-                            <Typography variant="h5" sx={{ mb: 1, fontWeight: 'medium' }}>
-                                {user.role === 'admin' ? 'Admin Chat Dashboard' : 'Welcome to Chat'}
+                        <Box sx={{ textAlign: 'center', maxWidth: 500, px: 4 }}>
+                            <Box sx={{ 
+                                fontSize: '4rem', 
+                                mb: 3,
+                                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                color: 'transparent'
+                            }}>
+                                💬
+                            </Box>
+                            <Typography variant="h4" sx={{ 
+                                mb: 2, 
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                color: 'transparent'
+                            }}>
+                                {user.role === 'admin' ? 'Admin Dashboard' : 'Welcome to Chat'}
                             </Typography>
-                            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                            <Typography variant="h6" sx={{ color: '#64748b', mb: 4, lineHeight: 1.6 }}>
                                 {user.role === 'admin'
-                                    ? 'Select a group or create a new one to start chatting'
-                                    : 'Select a group to start chatting with your team'}
+                                    ? 'Select a group or create a new one to start managing conversations'
+                                    : 'Select a group to start chatting with your team members'}
                             </Typography>
                             {user.role === 'admin' && (
                                 <Button
                                     variant="contained"
                                     startIcon={<AddIcon />}
                                     onClick={() => setCreateGroupDialog(true)}
-                                    sx={{ borderRadius: 2 }}
+                                    sx={{ 
+                                        borderRadius: 3,
+                                        py: 1.5,
+                                        px: 4,
+                                        bgcolor: '#6366f1',
+                                        fontWeight: 600,
+                                        textTransform: 'none',
+                                        boxShadow: '0 10px 40px rgba(99, 102, 241, 0.3)',
+                                        '&:hover': {
+                                            bgcolor: '#5b21b6',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 15px 50px rgba(99, 102, 241, 0.4)'
+                                        },
+                                        transition: 'all 0.3s ease'
+                                    }}
                                 >
                                     Create New Group
                                 </Button>
@@ -2047,86 +2281,122 @@ const Chat = () => {
                     onClose={() => setCreateGroupDialog(false)}
                     fullWidth
                     maxWidth="sm"
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4,
+                            p: 1
+                        }
+                    }}
                 >
-                    <DialogTitle>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                            <GroupsIcon color="primary" />
-                            <Typography variant="h6">Create New Group</Typography>
+                    <DialogTitle sx={{ pb: 1 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                            <Box sx={{ 
+                                p: 1.5, 
+                                borderRadius: 2, 
+                                bgcolor: '#ede9fe'
+                            }}>
+                                <GroupsIcon sx={{ color: '#6366f1' }} />
+                            </Box>
+                            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                                Create New Group
+                            </Typography>
                         </Stack>
                     </DialogTitle>
-                    <DialogContent>
+                    <DialogContent sx={{ pt: 2 }}>
                         <TextField
                             fullWidth
                             label="Group Name"
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
-                            sx={{ mb: 3 }}
+                            sx={{ mb: 4 }}
+                            InputProps={{
+                                sx: { borderRadius: 2 }
+                            }}
                             error={!groupName.trim() && groupName.length > 0}
                             helperText={!groupName.trim() && groupName.length > 0 ? "Group name is required" : ""}
                         />
-                        <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                            Add Members (Users only):
+                        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#1e293b' }}>
+                            Add Members:
                         </Typography>
-                        <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
+                        <Box sx={{ 
+                            maxHeight: 300, 
+                            overflowY: 'auto',
+                            bgcolor: '#f8fafc',
+                            borderRadius: 3,
+                            p: 1
+                        }}>
                             {users.length === 0 ? (
-                                <Box sx={{ p: 2, textAlign: 'center' }}>
-                                    <Typography variant="body2" color="text.secondary">
+                                <Box sx={{ p: 3, textAlign: 'center' }}>
+                                    <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
                                         {error ? 'Failed to load users. Please try again.' : 'No users available to add'}
                                     </Typography>
                                     {error && (
                                         <Button
                                             size="small"
                                             onClick={fetchUsers}
-                                            sx={{ mt: 1 }}
+                                            sx={{ textTransform: 'none', fontWeight: 600 }}
                                         >
                                             Retry Loading Users
                                         </Button>
                                     )}
                                 </Box>
                             ) : (
-                                <List>
-                                    {users.map((user) => (
+                                <List sx={{ p: 0 }}>
+                                    {users.map((contact) => (
                                         <ListItem
-                                            key={user.id}
+                                            key={contact.id}
                                             secondaryAction={
                                                 <Checkbox
                                                     edge="end"
-                                                    checked={selectedMembers.includes(user.id)}
-                                                    onChange={() => toggleMemberSelection(user.id)}
+                                                    checked={selectedMembers.includes(contact.id)}
+                                                    onChange={() => toggleMemberSelection(contact.id)}
+                                                    sx={{
+                                                        color: '#6366f1',
+                                                        '&.Mui-checked': {
+                                                            color: '#6366f1'
+                                                        }
+                                                    }}
                                                 />
                                             }
                                             disablePadding
                                         >
-                                            <ListItemButton onClick={() => toggleMemberSelection(user.id)}>
+                                            <ListItemButton 
+                                                onClick={() => toggleMemberSelection(contact.id)}
+                                                sx={{ borderRadius: 2, py: 1.5 }}
+                                            >
                                                 <ListItemAvatar>
-                                                    <Badge
-                                                        overlap="circular"
-                                                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                                        variant="dot"
-                                                        color={getStatusColor(user.status)}
-                                                    >
-                                                        <Avatar>{user.name.charAt(0)}</Avatar>
-                                                    </Badge>
+                                                    <Box sx={{ position: 'relative' }}>
+                                                        <Avatar sx={{
+                                                            bgcolor: '#f1f5f9',
+                                                            color: '#475569',
+                                                            fontWeight: 600
+                                                        }}>
+                                                            {contact.name.charAt(0).toUpperCase()}
+                                                        </Avatar>
+                                                        <Box
+                                                            sx={{
+                                                                position: 'absolute',
+                                                                bottom: 0,
+                                                                right: 0,
+                                                                width: 12,
+                                                                height: 12,
+                                                                borderRadius: '50%',
+                                                                bgcolor: getStatusColor(contact.status),
+                                                                border: '2px solid white'
+                                                            }}
+                                                        />
+                                                    </Box>
                                                 </ListItemAvatar>
                                                 <ListItemText
-                                                    primary={user.name}
+                                                    primary={
+                                                        <Typography sx={{ fontWeight: 600, color: '#1e293b' }}>
+                                                            {contact.name}
+                                                        </Typography>
+                                                    }
                                                     secondary={
-                                                        <Box>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                {user.email}
-                                                            </Typography>
-                                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                                <Typography variant="caption" color="text.secondary">
-                                                                    {user.status || 'offline'}
-                                                                </Typography>
-                                                                <Chip
-                                                                    label="user"
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                    sx={{ fontSize: '0.6rem', height: '16px' }}
-                                                                />
-                                                            </Stack>
-                                                        </Box>
+                                                        <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                                            {contact.status === 'online' ? 'Active now' : contact.status || 'offline'}
+                                                        </Typography>
                                                     }
                                                 />
                                             </ListItemButton>
@@ -2136,23 +2406,47 @@ const Chat = () => {
                             )}
                         </Box>
                         {selectedMembers.length > 0 && (
-                            <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
-                                {selectedMembers.length} member{selectedMembers.length === 1 ? '' : 's'} selected
-                            </Typography>
+                            <Box sx={{ 
+                                mt: 3, 
+                                p: 2, 
+                                bgcolor: '#ede9fe', 
+                                borderRadius: 2,
+                                textAlign: 'center'
+                            }}>
+                                <Typography variant="body2" sx={{ color: '#6366f1', fontWeight: 600 }}>
+                                    {selectedMembers.length} member{selectedMembers.length === 1 ? '' : 's'} selected
+                                </Typography>
+                            </Box>
                         )}
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => {
-                            setCreateGroupDialog(false);
-                            setGroupName('');
-                            setSelectedMembers([]);
-                        }}>
+                    <DialogActions sx={{ p: 3, pt: 2 }}>
+                        <Button 
+                            onClick={() => {
+                                setCreateGroupDialog(false);
+                                setGroupName('');
+                                setSelectedMembers([]);
+                            }}
+                            sx={{ 
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                color: '#64748b'
+                            }}
+                        >
                             Cancel
                         </Button>
                         <Button
                             variant="contained"
                             onClick={handleCreateGroup}
                             disabled={!groupName.trim() || selectedMembers.length === 0}
+                            sx={{
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                bgcolor: '#6366f1',
+                                '&:hover': {
+                                    bgcolor: '#5b21b6'
+                                }
+                            }}
                         >
                             Create Group ({selectedMembers.length} member{selectedMembers.length === 1 ? '' : 's'})
                         </Button>

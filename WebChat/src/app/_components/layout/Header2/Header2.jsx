@@ -36,23 +36,31 @@ function Header2() {
   ];
 
   return (
-    
     <AppBar 
-      position="static" 
+      position="fixed" // Changed from 'static' to 'fixed'
       elevation={0}
       sx={{
-        width: '100%',
+        width: '100vw', // Use viewport width
+        left: 0,
+        right: 0,
         backgroundColor: 'background.paper',
         color: 'text.primary',
         borderBottom: '1px solid',
         borderColor: 'divider',
-        py: 1
+        py: 1,
+        zIndex: theme.zIndex.drawer + 1 // Ensure it stays above other content
       }}
     >
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
+      <Container 
+        maxWidth={false} // Remove maxWidth constraint
+        sx={{
+          px: { xs: 2, sm: 3, md: 4 }, // Add responsive padding
+          width: '100%'
+        }}
+      >
+        <Toolbar disableGutters sx={{ width: '100%' }}>
           {/* Left Section - Logo and Navigation */}
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 4 }}>
             <Logo />
             
             {isSidebarStyle(SIDEBAR_STYLES.CLIPPED_UNDER_HEADER) && !isBelowLg && (
@@ -60,22 +68,19 @@ function Header2() {
             )}
 
             {/* Navigation Links */}
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: 4 , gap:4 }}>
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: 4, gap: 4 }}>
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
-                  to= {link.path}
+                  to={link.path}
+                  style={{ textDecoration: 'none' }}
                   sx={{
-                    mx: 1,
                     color: 'text.primary',
                     textTransform: 'none',
-                    textDecoration:'none',
-                    margin:'',
                     fontWeight: 500,
                     '&:hover': {
                       color: 'primary.main',
                       backgroundColor: 'transparent'
-
                     }
                   }}
                 >
@@ -97,11 +102,9 @@ function Header2() {
           </Box>
 
           {/* Right Section - Icons and User */}
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center" gap={2}>
             <ThemeModeOption />
             <TranslationPopover />
-            <MessagesPopover />
-            <NotificationsPopover />
             <AuthUserPopover />
           </Stack>
         </Toolbar>

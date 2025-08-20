@@ -14,12 +14,13 @@ import { ContentLayout } from "@app/_layouts/ContentLayout";
 import UserHome from "@app/pages/UserDashboard/UserDashboard/UserDashboard";
 import UserDashboard from "@app/pages/UserDashboard/UserDashboard/UserDashboard";
 import Chat from "@app/pages/AdminDashboard/Chat/Chat";
+import { SoloLayout2 } from "@app/_layouts/SoloLayout2";
 
 
 const routes = [
   {
     path: "/",
-    element: <SoloLayout />,
+    element: <SoloLayout2/>,
     children: [
       {
         path: "/",

@@ -247,7 +247,8 @@ const handleSubmit = async () => {
       tags: tags.filter(tag => tag.trim()),
       assignees: selectedUsers,
       attachments: formattedAttachments, // This should be an array of objects
-      creator: currentUser._id || currentUser.id
+      creator: currentUser._id || currentUser.id,
+      status: 'Pending'
     };
 
     console.log('About to send task data:', taskData);
