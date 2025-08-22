@@ -1080,4 +1080,96 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// Get all tasks for admin (with filters)
+router.get('/admin-tasks', auth, async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      status, 
+      priority, 
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+    
+    // Build query - admin can see all tasks
+    const query = {};
+
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const tasks = await Task.find(query)
+      .populate('creator', 'name email avatar')
+      .populate('assignees', 'name email avatar')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Task.countDocuments(query);
+
+    res.json({
+      tasks,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        count: total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update task (admin can update any task)
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Update task fields
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    ).populate('creator', 'name email avatar')
+     .populate('assignees', 'name email avatar');
+
+    res.json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete task (admin can delete any task)
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    await Task.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

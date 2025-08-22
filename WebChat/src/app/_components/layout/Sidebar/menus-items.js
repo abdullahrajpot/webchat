@@ -6,21 +6,23 @@ export function getMenus() {
     {
       label: t("sidebar.menu.sample"),
       children: [
-        {
-          path: "/",
-          label: t("sidebar.menuItem.sample"),
-          icon: "sample",
-        },
+      
          {
           path: "/admindashboard/assign-task",
-          label: "Assign-Task",
+          label: t("sidebar.menu.AssignTask"),
           icon: "task",
         },
         {
           path: "/admindashboard/chat",
-          label: "Chat",
+          label: t("sidebar.menu.Chat"),
           icon: "chat",
         },
+         {
+          path: "/admindashboard/all-tasks",
+          label: t("sidebar.menu.AllTasks"),
+          icon: "tasklist",
+        },
+        
       ],
     },
   ];

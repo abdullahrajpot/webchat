@@ -13,7 +13,8 @@ const TranslationPopover = () => {
     fr: { name: "French", flag: "FR" },
     zh: { name: "Chinese", flag: "CN" },
     es: { name: "Spanish", flag: "ES" },
-    it: { name: "Italian", flag: "IT" },
+    it: { name: "German", flag: "DE" },
+    // de: { name: "", flag: "DE"},
   };
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);

@@ -13,6 +13,9 @@ import { CssBaseline } from "@mui/material";
 import { AppSnackbar } from "./_components/_core";
 import { Spinner } from "./_shared";
 import { AppProvider } from "./_components/AppProvider";
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+
 
 function App() {
   return (
@@ -25,6 +28,8 @@ function App() {
               <JumboDialogProvider>
                 <JumboDialog />
                 <AppSnackbar>
+                  <ToastContainer position="top-right" autoClose={2000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+
                   <RouterProvider router={router} />
                 </AppSnackbar>
               </JumboDialogProvider>

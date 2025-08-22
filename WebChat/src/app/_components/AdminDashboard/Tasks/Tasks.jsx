@@ -57,13 +57,14 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
+import { useTranslation } from 'react-i18next';
 
 // API functions
 // Add this helper function to get the token
 const getAuthToken = () => {
   const token = localStorage.getItem('token');
   if (token) return token;
-  
+
   // Fallback to cookies if using cookie-based auth
   const authCookie = document.cookie
     .split('; ')
@@ -87,7 +88,7 @@ const getCurrentUserFromAuth = () => {
     const authCookie = document.cookie
       .split('; ')
       .find(row => row.startsWith('auth-user='));
-    
+
     if (authCookie) {
       const cookieValue = authCookie.split('=')[1];
       const decodedValue = decodeURIComponent(cookieValue);
@@ -103,7 +104,9 @@ const getCurrentUserFromAuth = () => {
 const Tasks = ({ onTaskCreated }) => {
   const navigate = useNavigate();
   const { user: authUser, isAuthenticated } = useAuth(); // Get user from useAuth
-  
+  const { t } = useTranslation();
+
+
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -114,7 +117,7 @@ const Tasks = ({ onTaskCreated }) => {
   const [showTagInput, setShowTagInput] = useState(false);
   const [assignees, setAssignees] = useState([]);
   const [attachments, setAttachments] = useState([]);
-  
+
   // UI states
   const [showAssigneeDialog, setShowAssigneeDialog] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
@@ -127,7 +130,7 @@ const Tasks = ({ onTaskCreated }) => {
   // Get current user from multiple sources
   useEffect(() => {
     let user = null;
-    
+
     // First try useAuth
     if (authUser && (authUser._id || authUser.id)) {
       user = authUser;
@@ -138,10 +141,10 @@ const Tasks = ({ onTaskCreated }) => {
       user = getCurrentUserFromAuth();
       console.log('User from cookie:', user);
     }
-    
+
     setCurrentUser(user);
     console.log('Final current user:', user);
-    
+
     if (!user || (!user._id && !user.id)) {
       showSnackbar('Please login to create tasks', 'error');
     }
@@ -153,26 +156,26 @@ const Tasks = ({ onTaskCreated }) => {
       try {
         setUsersLoading(true);
         console.log('Fetching users...');
-        
+
         const users = await fetchUsers();
         console.log('Fetched users:', users);
-        
+
         let allUsers = [...users];
-        
+
         // Add current user if not in the list
         if (currentUser) {
           const userId = currentUser._id || currentUser.id;
           const userExists = users.some(u => (u._id || u.id) === userId);
-          
+
           if (!userExists) {
             console.log('Adding current user to available users');
             allUsers = [currentUser, ...users];
           }
         }
-        
+
         console.log('All available users:', allUsers);
         setAvailableUsers(allUsers);
-        
+
       } catch (err) {
         console.error('Error fetching users:', err);
         showSnackbar('Failed to load users', 'error');
@@ -196,78 +199,78 @@ const Tasks = ({ onTaskCreated }) => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-const createTask = async (taskData) => {
-  const token = getAuthToken();  
-  try {
-    const response = await axios.post('http://localhost:5001/api/tasks', taskData, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('API Error:', error.response?.data);
-    throw error;
-  }
-};
-
-// STEP 5: Make sure your handleSubmit function creates proper objects
-const handleSubmit = async () => {
-  if (!currentUser || (!currentUser._id && !currentUser.id)) {
-    showSnackbar('Please login to create tasks', 'error');
-    return;
-  }
-
-  if (!title.trim()) {
-    showSnackbar('Task title is required', 'error');
-    return;
-  }
-
-  try {
-    setLoading(true);
-    
-    // Make sure attachments are proper objects
-    const formattedAttachments = attachments.map(att => {
-      // Ensure all required fields are strings
-      return {
-        id: String(att.id || ''),
-        name: String(att.name || ''),
-        size: String(att.size || ''),
-        type: String(att.type || ''),
-        url: att.url ? String(att.url) : undefined
-      };
-    });
-
-    const taskData = {
-      title: title.trim(),
-      description: description.trim(),
-      deadline: deadline ? new Date(deadline).toISOString() : null,
-      priority,
-      tags: tags.filter(tag => tag.trim()),
-      assignees: selectedUsers,
-      attachments: formattedAttachments, // This should be an array of objects
-      creator: currentUser._id || currentUser.id,
-      status: 'Pending'
-    };
-
-    console.log('About to send task data:', taskData);
-    
-    const newTask = await createTask(taskData);
-    showSnackbar('Task created successfully!');
-    
-    resetForm();
-    
-    if (onTaskCreated) {
-      onTaskCreated(newTask);
+  const createTask = async (taskData) => {
+    const token = getAuthToken();
+    try {
+      const response = await axios.post('http://localhost:5001/api/tasks', taskData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error.response?.data);
+      throw error;
     }
-  } catch (err) {
-    console.error('Error creating task:', err);
-    showSnackbar(err.response?.data?.message || 'Failed to create task', 'error');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  // STEP 5: Make sure your handleSubmit function creates proper objects
+  const handleSubmit = async () => {
+    if (!currentUser || (!currentUser._id && !currentUser.id)) {
+      showSnackbar('Please login to create tasks', 'error');
+      return;
+    }
+
+    if (!title.trim()) {
+      showSnackbar('Task title is required', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Make sure attachments are proper objects
+      const formattedAttachments = attachments.map(att => {
+        // Ensure all required fields are strings
+        return {
+          id: String(att.id || ''),
+          name: String(att.name || ''),
+          size: String(att.size || ''),
+          type: String(att.type || ''),
+          url: att.url ? String(att.url) : undefined
+        };
+      });
+
+      const taskData = {
+        title: title.trim(),
+        description: description.trim(),
+        deadline: deadline ? new Date(deadline).toISOString() : null,
+        priority,
+        tags: tags.filter(tag => tag.trim()),
+        assignees: selectedUsers,
+        attachments: formattedAttachments, // This should be an array of objects
+        creator: currentUser._id || currentUser.id,
+        status: 'Pending'
+      };
+
+      console.log('About to send task data:', taskData);
+
+      const newTask = await createTask(taskData);
+      showSnackbar('Task created successfully!');
+
+      resetForm();
+
+      if (onTaskCreated) {
+        onTaskCreated(newTask);
+      }
+    } catch (err) {
+      console.error('Error creating task:', err);
+      showSnackbar(err.response?.data?.message || 'Failed to create task', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setTitle('');
@@ -284,7 +287,7 @@ const handleSubmit = async () => {
 
   // Handle assignee selection
   const handleAssigneeUpdate = () => {
-    const selectedUserObjects = availableUsers.filter(user => 
+    const selectedUserObjects = availableUsers.filter(user =>
       selectedUsers.includes(user._id || user.id)
     );
     setAssignees(selectedUserObjects);
@@ -319,16 +322,16 @@ const handleSubmit = async () => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-const handleFileUpload = (event) => {
-  const files = Array.from(event.target.files);
-  const newAttachments = files.map(file => ({
-    id: Date.now() + Math.random().toString(36).substr(2, 9), // Better ID generation
-    name: file.name,
-    size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
-    type: file.type,
-  }));
-  setAttachments([...attachments, ...newAttachments]);
-};
+  const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files);
+    const newAttachments = files.map(file => ({
+      id: Date.now() + Math.random().toString(36).substr(2, 9), // Better ID generation
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+      type: file.type,
+    }));
+    setAttachments([...attachments, ...newAttachments]);
+  };
 
   const removeAttachment = (id) => {
     setAttachments(attachments.filter(att => att.id !== id));
@@ -371,7 +374,7 @@ const handleFileUpload = (event) => {
   };
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       minHeight: '100vh',
       py: 4
     }}>
@@ -381,11 +384,11 @@ const handleFileUpload = (event) => {
             {/* Header */}
             <Box sx={{ textAlign: 'center', mb: 4 }}>
               <Zoom in timeout={600}>
-                <Avatar sx={{ 
-                  bgcolor: 'white', 
+                <Avatar sx={{
+                  bgcolor: 'white',
                   color: 'primary.main',
-                  width: 64, 
-                  height: 64, 
+                  width: 64,
+                  height: 64,
                   mx: 'auto',
                   mb: 2,
                   // boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
@@ -393,24 +396,24 @@ const handleFileUpload = (event) => {
                   <TaskAlt sx={{ fontSize: 32 }} />
                 </Avatar>
               </Zoom>
-              <Typography variant="h3" sx={{ 
+              <Typography variant="h3" sx={{
                 color: 'black',
                 fontWeight: 700,
                 mb: 1,
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
               }}>
-                Create New Task
+                {t('assigntask.createnewtask')}
               </Typography>
-              <Typography variant="subtitle1" sx={{ 
+              <Typography variant="subtitle1" sx={{
                 color: 'rgba(8, 1, 1, 0.8)',
                 fontWeight: 400
               }}>
-                Organize your work and collaborate with your team
+                {t('assigntask.title')}
               </Typography>
             </Box>
 
             {/* Main Form */}
-            <Paper elevation={24} sx={{ 
+            <Paper elevation={24} sx={{
               borderRadius: 4,
               overflow: 'hidden',
               background: 'rgba(255,255,255,0.95)',
@@ -418,15 +421,15 @@ const handleFileUpload = (event) => {
               border: '1px solid rgba(255,255,255,0.2)'
             }}>
               {/* User Info Header */}
-              <Box sx={{ 
+              <Box sx={{
                 background: 'linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%)',
                 p: 3,
                 borderBottom: '1px solid rgba(0,0,0,0.08)'
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ 
-                    width: 48, 
-                    height: 48, 
+                  <Avatar sx={{
+                    width: 48,
+                    height: 48,
                     bgcolor: currentUser ? getUserColor(currentUser._id || currentUser.id) : 'primary.main',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                   }}>
@@ -437,7 +440,7 @@ const handleFileUpload = (event) => {
                       {currentUser?.name || 'Unknown User'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Creating task • {getCurrentDateTime()}
+                      {t('assigntask.createtask')} • {getCurrentDateTime()}
                     </Typography>
                   </Box>
                 </Box>
@@ -449,7 +452,7 @@ const handleFileUpload = (event) => {
                   <Grid item xs={12} lg={7}>
                     <Stack spacing={4}>
                       {/* Basic Info Section */}
-                      <Card variant="outlined" sx={{ 
+                      <Card variant="outlined" sx={{
                         borderRadius: 3,
                         border: '2px solid #f1f5f9',
                         '&:hover': { borderColor: 'primary.light' },
@@ -461,7 +464,7 @@ const handleFileUpload = (event) => {
                               <Description />
                             </Avatar>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                              Task Details
+                              {t('assigntask.taskdetails')}
                             </Typography>
                           </Box>
 
@@ -469,8 +472,8 @@ const handleFileUpload = (event) => {
                             <TextField
                               value={title}
                               onChange={(e) => setTitle(e.target.value)}
-                              label="Task Title"
-                              placeholder="What needs to be done?"
+                              label={t('assigntask.tasktitle')}
+                              placeholder={t('assigntask.whatneedtobedone')}
                               fullWidth
                               variant="outlined"
                               sx={{
@@ -492,7 +495,7 @@ const handleFileUpload = (event) => {
                             <TextField
                               value={description}
                               onChange={(e) => setDescription(e.target.value)}
-                              label="Description"
+                              label={t('assigntask.description')}
                               placeholder="Add more details about this task..."
                               multiline
                               rows={4}
@@ -509,7 +512,7 @@ const handleFileUpload = (event) => {
                       </Card>
 
                       {/* Attachments Section */}
-                      <Card variant="outlined" sx={{ 
+                      <Card variant="outlined" sx={{
                         borderRadius: 3,
                         border: '2px solid #f1f5f9',
                         '&:hover': { borderColor: 'primary.light' },
@@ -521,13 +524,13 @@ const handleFileUpload = (event) => {
                               <AttachFile />
                             </Avatar>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                              Attachments
+                              {t('assigntask.attachment')}
                             </Typography>
                             {attachments.length > 0 && (
-                              <Chip 
-                                label={attachments.length} 
-                                size="small" 
-                                color="secondary" 
+                              <Chip
+                                label={attachments.length}
+                                size="small"
+                                color="secondary"
                                 sx={{ fontWeight: 600 }}
                               />
                             )}
@@ -536,9 +539,9 @@ const handleFileUpload = (event) => {
                           <Stack spacing={2}>
                             {attachments.map((attachment) => (
                               <Zoom key={attachment.id} in timeout={300}>
-                                <Card variant="outlined" sx={{ 
+                                <Card variant="outlined" sx={{
                                   borderRadius: 2,
-                                  '&:hover': { 
+                                  '&:hover': {
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                                     transform: 'translateY(-1px)'
                                   },
@@ -553,9 +556,9 @@ const handleFileUpload = (event) => {
                                       <Typography variant="caption" color="text.secondary">{attachment.size}</Typography>
                                     </Box>
                                     <Tooltip title="Remove attachment">
-                                      <IconButton 
-                                        size="small" 
-                                        color="error" 
+                                      <IconButton
+                                        size="small"
+                                        color="error"
                                         onClick={() => removeAttachment(attachment.id)}
                                         sx={{ '&:hover': { bgcolor: 'error.light', color: 'white' } }}
                                       >
@@ -571,7 +574,7 @@ const handleFileUpload = (event) => {
                               variant="outlined"
                               component="label"
                               startIcon={<Add />}
-                              sx={{ 
+                              sx={{
                                 borderStyle: 'dashed',
                                 borderWidth: 2,
                                 py: 2,
@@ -580,14 +583,14 @@ const handleFileUpload = (event) => {
                                 textTransform: 'none',
                                 fontSize: '0.95rem',
                                 fontWeight: 500,
-                                '&:hover': { 
-                                  bgcolor: 'primary.light', 
+                                '&:hover': {
+                                  bgcolor: 'primary.light',
                                   color: 'white',
                                   borderStyle: 'solid'
                                 }
                               }}
                             >
-                              Add Files
+                              {t('assigntask.addfile')}
                               <input type="file" multiple onChange={handleFileUpload} hidden />
                             </Button>
                           </Stack>
@@ -600,7 +603,7 @@ const handleFileUpload = (event) => {
                   <Grid item xs={12} lg={5}>
                     <Stack spacing={3}>
                       {/* Assignees Card */}
-                      <Card variant="outlined" sx={{ 
+                      <Card variant="outlined" sx={{
                         borderRadius: 3,
                         border: '2px solid #f1f5f9',
                         '&:hover': { borderColor: 'primary.light' },
@@ -612,13 +615,13 @@ const handleFileUpload = (event) => {
                               <Groups />
                             </Avatar>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                              Team Members
+                              {t('assigntask.teammember')}
                             </Typography>
                             {assignees.length > 0 && (
-                              <Chip 
-                                label={assignees.length} 
-                                size="small" 
-                                color="info" 
+                              <Chip
+                                label={assignees.length}
+                                size="small"
+                                color="info"
                                 sx={{ fontWeight: 600 }}
                               />
                             )}
@@ -630,9 +633,9 @@ const handleFileUpload = (event) => {
                                 {assignees.map((assignee) => (
                                   <Tooltip key={assignee._id || assignee.id} title={assignee.name}>
                                     <Avatar
-                                      sx={{ 
-                                        bgcolor: getUserColor(assignee._id || assignee.id), 
-                                        width: 40, 
+                                      sx={{
+                                        bgcolor: getUserColor(assignee._id || assignee.id),
+                                        width: 40,
                                         height: 40,
                                         fontSize: '0.9rem',
                                         border: '3px solid white',
@@ -654,13 +657,15 @@ const handleFileUpload = (event) => {
                               onClick={() => setShowAssigneeDialog(true)}
                               disabled={usersLoading}
                               fullWidth
-                              sx={{ 
+                              sx={{
                                 textTransform: 'none',
                                 borderRadius: 2,
                                 py: 1.2
                               }}
                             >
-                              {usersLoading ? 'Loading Users...' : `Add Team Members (${availableUsers.length})`}
+                              {usersLoading
+                                ? "Loading Users..."
+                                : `${t("assigntask.addteammember")} (${availableUsers.length})`}
                             </Button>
 
                             {currentUser && !assignees.some(a => (a._id || a.id) === (currentUser._id || currentUser.id)) && (
@@ -670,7 +675,7 @@ const handleFileUpload = (event) => {
                                 onClick={handleAutoAssignCurrentUser}
                                 sx={{ textTransform: 'none', fontSize: '0.85rem' }}
                               >
-                                + Assign to myself
+                                +{t('assigntask.assigntomyself')}
                               </Button>
                             )}
                           </Stack>
@@ -678,7 +683,7 @@ const handleFileUpload = (event) => {
                       </Card>
 
                       {/* Schedule & Priority Card */}
-                      <Card variant="outlined" sx={{ 
+                      <Card variant="outlined" sx={{
                         borderRadius: 3,
                         border: '2px solid #f1f5f9',
                         '&:hover': { borderColor: 'primary.light' },
@@ -690,14 +695,14 @@ const handleFileUpload = (event) => {
                               <Schedule />
                             </Avatar>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                              Schedule & Priority
+                              {t('assigntask.sheduleandpriority')}
                             </Typography>
                           </Box>
 
                           <Stack spacing={3}>
                             <Box>
                               <InputLabel sx={{ mb: 1, fontWeight: 500, color: 'text.primary' }}>
-                                Due Date
+                                {t('assigntask.due')}
                               </InputLabel>
                               <TextField
                                 type="datetime-local"
@@ -721,7 +726,7 @@ const handleFileUpload = (event) => {
 
                             <Box>
                               <InputLabel sx={{ mb: 1, fontWeight: 500, color: 'text.primary' }}>
-                                Priority Level
+                                {t('assigntask.prioritylevel')}
                               </InputLabel>
                               <FormControl fullWidth>
                                 <Select
@@ -748,7 +753,7 @@ const handleFileUpload = (event) => {
                       </Card>
 
                       {/* Tags Card */}
-                      <Card variant="outlined" sx={{ 
+                      <Card variant="outlined" sx={{
                         borderRadius: 3,
                         border: '2px solid #f1f5f9',
                         '&:hover': { borderColor: 'primary.light' },
@@ -760,13 +765,13 @@ const handleFileUpload = (event) => {
                               <Label />
                             </Avatar>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                              Tags
+                              {t('assigntask.tags')}
                             </Typography>
                             {tags.length > 0 && (
-                              <Chip 
-                                label={tags.length} 
-                                size="small" 
-                                color="success" 
+                              <Chip
+                                label={tags.length}
+                                size="small"
+                                color="success"
                                 sx={{ fontWeight: 600 }}
                               />
                             )}
@@ -781,7 +786,7 @@ const handleFileUpload = (event) => {
                                     onDelete={() => removeTag(tag)}
                                     color="success"
                                     variant="outlined"
-                                    sx={{ 
+                                    sx={{
                                       borderRadius: 2,
                                       '&:hover': { bgcolor: 'success.light' }
                                     }}
@@ -806,11 +811,11 @@ const handleFileUpload = (event) => {
                                   }
                                 }}
                               />
-                              <IconButton 
-                                size="small" 
-                                onClick={addTag} 
+                              <IconButton
+                                size="small"
+                                onClick={addTag}
                                 color="success"
-                                sx={{ 
+                                sx={{
                                   borderRadius: 2,
                                   bgcolor: 'success.light',
                                   '&:hover': { bgcolor: 'success.main', color: 'white' }
@@ -818,8 +823,8 @@ const handleFileUpload = (event) => {
                               >
                                 <Add />
                               </IconButton>
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={() => setShowTagInput(false)}
                                 sx={{ borderRadius: 2 }}
                               >
@@ -832,14 +837,14 @@ const handleFileUpload = (event) => {
                               startIcon={<Add />}
                               variant="outlined"
                               fullWidth
-                              sx={{ 
+                              sx={{
                                 textTransform: 'none',
                                 borderRadius: 2,
                                 py: 1.2,
                                 borderStyle: 'dashed'
                               }}
                             >
-                              Add Tag
+                              {t('assigntask.addtags')}
                             </Button>
                           )}
                         </CardContent>
@@ -849,21 +854,21 @@ const handleFileUpload = (event) => {
                 </Grid>
 
                 {/* Action Buttons */}
-                <Box sx={{ 
-                  mt: 4, 
-                  pt: 3, 
+                <Box sx={{
+                  mt: 4,
+                  pt: 3,
                   borderTop: '1px solid rgba(0,0,0,0.08)',
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   gap: 2
                 }}>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     startIcon={<Clear />}
                     onClick={resetForm}
-                    sx={{ 
+                    sx={{
                       textTransform: 'none',
                       borderRadius: 2,
                       px: 3,
@@ -875,15 +880,15 @@ const handleFileUpload = (event) => {
                       }
                     }}
                   >
-                    Clear Form
+                    {t('assigntask.clearform')}
                   </Button>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     size="large"
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save />}
                     onClick={handleSubmit}
                     disabled={loading || !title.trim() || !currentUser}
-                    sx={{ 
+                    sx={{
                       textTransform: 'none',
                       px: 4,
                       py: 1.5,
@@ -914,10 +919,10 @@ const handleFileUpload = (event) => {
         </Fade>
 
         {/* Assignee Selection Dialog */}
-        <Dialog 
-          open={showAssigneeDialog} 
-          onClose={() => setShowAssigneeDialog(false)} 
-          maxWidth="sm" 
+        <Dialog
+          open={showAssigneeDialog}
+          onClose={() => setShowAssigneeDialog(false)}
+          maxWidth="sm"
           fullWidth
           PaperProps={{
             sx: {
@@ -926,9 +931,9 @@ const handleFileUpload = (event) => {
             }
           }}
         >
-          <DialogTitle sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <DialogTitle sx={{
+            display: 'flex',
+            alignItems: 'center',
             gap: 2,
             pb: 1,
             background: 'linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%)'
@@ -938,16 +943,16 @@ const handleFileUpload = (event) => {
             </Avatar>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Select Team Members
+                {t('assigntask.selecteammembers')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Choose who should work on this task
+                {t('assigntask.chosemembers')}
               </Typography>
             </Box>
-            <Chip 
-              label={`${availableUsers.length} users`} 
-              size="small" 
-              color="info" 
+            <Chip
+              label={`${availableUsers.length} users`}
+              size="small"
+              color="info"
               variant="outlined"
             />
           </DialogTitle>
@@ -956,13 +961,13 @@ const handleFileUpload = (event) => {
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
                 <CircularProgress />
                 <Typography variant="body2" sx={{ ml: 2 }}>
-                  Loading team members...
+                  {t('assigntask.loadteammembers')}
                 </Typography>
               </Box>
             ) : availableUsers.length === 0 ? (
               <Box sx={{ p: 3 }}>
                 <Alert severity="warning" sx={{ borderRadius: 2 }}>
-                  No users available. Please check your user data or try refreshing.
+                  {t('assigntask.nouser')}
                 </Alert>
               </Box>
             ) : (
@@ -972,8 +977,8 @@ const handleFileUpload = (event) => {
                   const isCurrentUser = currentUser && userId === (currentUser._id || currentUser.id);
                   return (
                     <Fade key={userId} in timeout={300 + index * 50}>
-                      <ListItem 
-                        button 
+                      <ListItem
+                        button
                         onClick={() => {
                           if (selectedUsers.includes(userId)) {
                             setSelectedUsers(selectedUsers.filter(id => id !== userId));
@@ -1003,14 +1008,14 @@ const handleFileUpload = (event) => {
                           sx={{ mr: 1 }}
                         />
                         <ListItemAvatar>
-                          <Avatar sx={{ 
+                          <Avatar sx={{
                             bgcolor: getUserColor(userId),
                             boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                           }}>
                             {getUserInitials(user)}
                           </Avatar>
                         </ListItemAvatar>
-                        <ListItemText 
+                        <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -1031,29 +1036,29 @@ const handleFileUpload = (event) => {
             )}
           </DialogContent>
           <DialogActions sx={{ p: 3, gap: 2, background: 'linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%)' }}>
-            <Button 
+            <Button
               onClick={() => setShowAssigneeDialog(false)}
-              sx={{ 
+              sx={{
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 3
               }}
             >
-              Cancel
+              {t('assigntask.cancel')}
             </Button>
-            <Button 
-              onClick={handleAssigneeUpdate} 
+            <Button
+              onClick={handleAssigneeUpdate}
               variant="contained"
               startIcon={<Add />}
               disabled={selectedUsers.length === 0}
-              sx={{ 
+              sx={{
                 textTransform: 'none',
                 borderRadius: 2,
                 px: 3,
                 fontWeight: 600
               }}
             >
-              Add Selected ({selectedUsers.length})
+              {t('assigntask.addselected')} ({selectedUsers.length})
             </Button>
           </DialogActions>
         </Dialog>
@@ -1065,10 +1070,10 @@ const handleFileUpload = (event) => {
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         >
-          <Alert 
-            onClose={handleCloseSnackbar} 
-            severity={snackbar.severity} 
-            sx={{ 
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{
               width: '100%',
               borderRadius: 2,
               boxShadow: '0 8px 32px rgba(0,0,0,0.12)'

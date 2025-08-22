@@ -13,6 +13,8 @@ import {
 } from "@mui/icons-material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
+
 
 
 const APP_ICONS = [
@@ -29,6 +31,11 @@ const APP_ICONS = [
    {
     name: "task",
     Component: TaskAltOutlined,
+    props: { sx: { fontSize: 20 } },
+  },
+  {
+    name: "tasklist",
+    Component: ListAltOutlinedIcon,
     props: { sx: { fontSize: 20 } },
   },
 

@@ -129,7 +129,8 @@ module.exports = (io) => {
           fileName: msg.fileName,
           fileSize: msg.fileSize,
           fileUrl: msg.fileUrl,
-          fileType: msg.fileType
+          fileType: msg.fileType,
+          
         }));
 
         socket.emit('groupHistory', {

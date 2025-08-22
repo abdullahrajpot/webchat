@@ -1,10 +1,7 @@
-export const itTranslation = {
+export const deTranslation = {
   sidebar: {
     menu: {
       sample: "Sample Menu",
-      AssignTask: "Assegne Compito",
-      AllTasks: "Tutti i Compiti",
-      Chat: "Chat",
     },
     menuItem: {
       sample: "Sample Item",
@@ -24,7 +21,7 @@ export const itTranslation = {
     loggedIn: "eingeloggt",
     account: "Konto",
   },
-  assigntask: {
+  assigntask:{
     createnewtask: "Neue Aufgabe erstellen",
     title: "Organisieren Sie Ihre Arbeit und arbeiten Sie mit Ihrem Team zusammen",
     createtask: "Aufgabe erstellen",
@@ -41,7 +38,7 @@ export const itTranslation = {
     addfile: "Dateien hinzufügen",
     tags: "Schlagworte",
     addtags: "Tags hinzufügen",
-    clearform: "klare Form",
+    clearfrom: "klare Form",
     save: "sparen",
     taskcreated: "Aufgabe erstellt",
     selectteammember: "Wählen Sie Teammitglieder aus",
@@ -52,27 +49,11 @@ export const itTranslation = {
     whatneedtobedone: "was muss getan werden?",
   },
 
-  chat: {
+  chat:{
     chats: "Chats",
     contacts: "Kontakte",
     createnewgroup: "Neue Gruppe erstellen",
     admindashboard: "Admin Dashboard",
     typeamessage: "Nachricht eingeben...",
-    createyourfirstgroup: "Erstellen Sie Ihre erste Gruppe",
-    retry: "Wiederholen",
-    nochatfound: "Keine Chats gefunden",
-    createnewgroup: "Neue Gruppe erstellen",
-    deletechat: "Chat Loschen",
-    chatinfo: "chat info",
-    settings: "Einstellungen",
-    groupname: "Gruppenname",
-    addmembers: "Mitglieder hinzufügen:",
-    retryloadinguser: "Versuchen Sie erneut, Benutzer zu laden",
-    cancel: "Abbrechen",
-    searchconversation: "Konversation suchen",
-
-
-
-
   }
 };

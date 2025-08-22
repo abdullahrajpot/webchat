@@ -30,10 +30,10 @@ import {
   Assignment
 } from '@mui/icons-material';
 
-const TaskList = ({ 
-  tasks = [], 
-  loading = false, 
-  pagination = {}, 
+const TaskList = ({
+  tasks = [],
+  loading = false,
+  pagination = {},
   onStatusUpdate,
   onPageChange,
   onFilterChange,
@@ -85,7 +85,7 @@ const TaskList = ({
     const taskDate = new Date(date);
     const now = new Date();
     const isOverdue = taskDate < now;
-    
+
     return {
       formatted: taskDate.toLocaleDateString(),
       isOverdue
@@ -95,7 +95,7 @@ const TaskList = ({
   const handleSearchChange = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
-    
+
     // Debounce search
     clearTimeout(handleSearchChange.timeoutId);
     handleSearchChange.timeoutId = setTimeout(() => {
@@ -114,7 +114,7 @@ const TaskList = ({
           <Typography variant="h6" component="h2">
             My Tasks
           </Typography>
-          
+
           {/* Filters */}
           <Stack direction="row" spacing={2} alignItems="center">
             <TextField
@@ -131,7 +131,7 @@ const TaskList = ({
               }}
               sx={{ minWidth: 200 }}
             />
-            
+
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Status</InputLabel>
               <Select
@@ -175,8 +175,8 @@ const TaskList = ({
               No tasks found
             </Typography>
             <Typography color="text.secondary">
-              {Object.keys(filters).some(key => filters[key]) 
-                ? 'Try adjusting your filters' 
+              {Object.keys(filters).some(key => filters[key])
+                ? 'Try adjusting your filters'
                 : 'Create your first task to get started'
               }
             </Typography>
@@ -185,7 +185,7 @@ const TaskList = ({
           <Stack spacing={2}>
             {tasks.map((task) => {
               const deadline = formatDate(task.deadline);
-              
+
               return (
                 <Card key={task._id} variant="outlined" sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -208,13 +208,13 @@ const TaskList = ({
                       </Box>
 
                       {task.description && (
-                        <Typography 
-                          color="text.secondary" 
+                        <Typography
+                          color="text.secondary"
                           sx={{ mb: 2 }}
                           variant="body2"
                         >
-                          {task.description.length > 150 
-                            ? `${task.description.substring(0, 150)}...` 
+                          {task.description.length > 150
+                            ? `${task.description.substring(0, 150)}...`
                             : task.description
                           }
                         </Typography>
@@ -223,8 +223,8 @@ const TaskList = ({
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <CalendarToday sx={{ fontSize: 16 }} />
-                          <Typography 
-                            variant="caption" 
+                          <Typography
+                            variant="caption"
                             color={deadline.isOverdue ? 'error.main' : 'text.secondary'}
                           >
                             {deadline.formatted}

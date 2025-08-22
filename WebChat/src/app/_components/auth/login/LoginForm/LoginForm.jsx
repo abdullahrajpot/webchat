@@ -58,13 +58,7 @@ async function handleLogin(data) {
       toast.success("User Login Successfully");
       setSuccess("Login successful! Redirecting...");
 
-      setTimeout(() => {
-        if (response.data.user.role === "admin") {
-          navigate("/admindashboard");
-        } else {
-          navigate("/");
-        }
-      }, 1000);
+      
     } else {
       setError("Login failed: No user/token returned.");
       toast.error("Login failed");

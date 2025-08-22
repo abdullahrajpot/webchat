@@ -30,7 +30,8 @@ const messageSchema = new mongoose.Schema({
   },
   filePath: {
     type: String,
-    required: function() { return this.type === 'file'; }
+    default: '',
+    // required: function() { return this.type === 'file'; }
   },
   fileUrl: {
     type: String,

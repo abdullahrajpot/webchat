@@ -32,7 +32,6 @@ function Header2() {
     { name: "Dashboard", path: "/userdashboard" },
     { name: "Chat", path: "/chat" },
     { name: "About", path: "/about" },
-    { name: "Contact", path: "/contact" },
   ];
 
   return (
