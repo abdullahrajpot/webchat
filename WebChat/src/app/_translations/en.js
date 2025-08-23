@@ -61,7 +61,7 @@ chat: {
   createyourfirstgroup: "Create your first group",
   retry: "Retry",
   nochatfound: "No chats found",
-  createnewgroup: "Create New Group",
+  creategroup: "Create Group",
   deletechat: "Delete Chat",
   chatinfo: "Chat Info",
   settings: "Settings",
@@ -71,7 +71,7 @@ chat: {
   cancel: "Cancel",
   searchconversation: "Search Conversation...",
   selectgroup: "Select a group or create a new one to start managing conversations",
-  
+
 
 
 }

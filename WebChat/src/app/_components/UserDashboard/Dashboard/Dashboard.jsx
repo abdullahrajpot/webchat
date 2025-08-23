@@ -309,6 +309,8 @@ import TaskStatsCards from './components/TaskStatsCards';
 import TaskChart from './components/TaskChart';
 import TaskList from './components/TaskList';
 import axios from 'axios';
+import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
+
 
 // API configuration - adjust base URL as needed
 const API_BASE = 'http://localhost:5001/api';
@@ -319,6 +321,8 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [todayTasks, setTodayTasks] = useState([]);
+  const { user, token } = useAuth();
+  
   const [projectStats, setProjectStats] = useState({
     completed: 0,
     inProgress: 0,
@@ -349,17 +353,86 @@ const Dashboard = () => {
     setSnackbar({ open: true, message, severity });
   };
 
+  // Add debugging and validation for auth state
+  console.log('Dashboard Auth state:', { user, token, hasToken: !!token });
+
+  // Early return if no authentication
+  if (!user || !token) {
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', flexDirection: 'column' }}>
+          <CircularProgress sx={{ mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            {!user ? 'Loading user data...' : 'Authentication required. Please login again.'}
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  // API helper with consistent token usage
+  const apiCall = async (endpoint, options = {}) => {
+    try {
+      console.log(`Making API call to: ${API_BASE}${endpoint}`);
+      console.log('Using token:', token ? 'Token present' : 'No token');
+
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...options.headers
+        }
+      });
+
+      console.log(`API Response Status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API Error Response:`, errorText);
+
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || 'Unknown error occurred' };
+        }
+
+        const errorMessage = errorData.details || errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log(`API Success Response:`, data);
+      return data;
+    } catch (error) {
+      console.error(`API Error for ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // Updated axios calls to use consistent token
+  const createAxiosConfig = () => ({
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
   // Fetch dashboard stats
   const fetchStats = async () => {
+    if (!token) {
+      console.warn('No token available for fetchStats');
+      return;
+    }
+    
     setLoading(prev => ({ ...prev, stats: true }));
     try {
-      const response = await axios.get(`${API_BASE}/tasks/dashboard/stats`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/dashboard/stats`, createAxiosConfig());
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
-      showSnackbar('Error fetching dashboard stats', 'error');
+      showSnackbar(`Error fetching dashboard stats: ${error.response?.data?.message || error.message}`, 'error');
     } finally {
       setLoading(prev => ({ ...prev, stats: false }));
     }
@@ -367,15 +440,18 @@ const Dashboard = () => {
 
   // Fetch chart data
   const fetchChartData = async (period = 'monthly') => {
+    if (!token) {
+      console.warn('No token available for fetchChartData');
+      return;
+    }
+    
     setLoading(prev => ({ ...prev, chart: true }));
     try {
-      const response = await axios.get(`${API_BASE}/tasks/dashboard/chart?period=${period}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/dashboard/chart?period=${period}`, createAxiosConfig());
       setChartData(response.data);
     } catch (error) {
       console.error('Error fetching chart data:', error);
-      showSnackbar('Error fetching chart data', 'error');
+      showSnackbar(`Error fetching chart data: ${error.response?.data?.message || error.message}`, 'error');
     } finally {
       setLoading(prev => ({ ...prev, chart: false }));
     }
@@ -383,6 +459,11 @@ const Dashboard = () => {
 
   // Fetch tasks with filters
   const fetchTasks = async (currentFilters = filters) => {
+    if (!token) {
+      console.warn('No token available for fetchTasks');
+      return;
+    }
+    
     setLoading(prev => ({ ...prev, tasks: true }));
     try {
       const queryParams = new URLSearchParams();
@@ -392,15 +473,13 @@ const Dashboard = () => {
         }
       });
 
-      const response = await axios.get(`${API_BASE}/tasks/user-tasks?${queryParams}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/user-tasks?${queryParams}`, createAxiosConfig());
       
       setTasks(response.data.tasks);
       setPagination(response.data.pagination);
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      showSnackbar('Error fetching tasks', 'error');
+      showSnackbar(`Error fetching tasks: ${error.response?.data?.message || error.message}`, 'error');
     } finally {
       setLoading(prev => ({ ...prev, tasks: false }));
     }
@@ -408,63 +487,81 @@ const Dashboard = () => {
 
   // Fetch project statistics
   const fetchProjectStats = async () => {
+    if (!token) {
+      console.warn('No token available for fetchProjectStats');
+      return;
+    }
+    
     try {
-      const response = await axios.get(`${API_BASE}/tasks/dashboard/project-stats`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/dashboard/project-stats`, createAxiosConfig());
       setProjectStats(response.data);
     } catch (error) {
       console.error('Error fetching project stats:', error);
-      showSnackbar('Error fetching project statistics', 'error');
+      showSnackbar(`Error fetching project statistics: ${error.response?.data?.message || error.message}`, 'error');
     }
   };
 
   // Fetch task progress data
   const fetchTaskProgress = async () => {
+    if (!token) {
+      console.warn('No token available for fetchTaskProgress');
+      return;
+    }
+    
     try {
-      const response = await axios.get(`${API_BASE}/tasks/dashboard/task-progress`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/dashboard/task-progress`, createAxiosConfig());
       setTaskProgress(response.data);
     } catch (error) {
       console.error('Error fetching task progress:', error);
-      showSnackbar('Error fetching task progress', 'error');
+      showSnackbar(`Error fetching task progress: ${error.response?.data?.message || error.message}`, 'error');
     }
   };
 
   // Fetch today's tasks
   const fetchTodayTasks = async () => {
+    if (!token) {
+      console.warn('No token available for fetchTodayTasks');
+      return;
+    }
+    
     try {
-      const response = await axios.get(`${API_BASE}/tasks/dashboard/today-tasks`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/dashboard/today-tasks`, createAxiosConfig());
       setTodayTasks(response.data);
     } catch (error) {
       console.error('Error fetching today tasks:', error);
-      showSnackbar('Error fetching today\'s tasks', 'error');
+      showSnackbar(`Error fetching today's tasks: ${error.response?.data?.message || error.message}`, 'error');
     }
   };
 
   // Fetch recent projects
   const fetchRecentProjects = async () => {
+    if (!token) {
+      console.warn('No token available for fetchRecentProjects');
+      return;
+    }
+    
     try {
-      const response = await axios.get(`${API_BASE}/tasks/dashboard/recent-projects`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await axios.get(`${API_BASE}/tasks/dashboard/recent-projects`, createAxiosConfig());
       setRecentProjects(response.data);
     } catch (error) {
       console.error('Error fetching recent projects:', error);
-      showSnackbar('Error fetching recent projects', 'error');
+      showSnackbar(`Error fetching recent projects: ${error.response?.data?.message || error.message}`, 'error');
     }
   };
 
   // Update task status
   const handleStatusUpdate = async (taskId, status) => {
+    if (!token) {
+      console.warn('No token available for handleStatusUpdate');
+      showSnackbar('Authentication required', 'error');
+      return;
+    }
+    
     try {
       await axios.patch(
         `${API_BASE}/tasks/${taskId}/status`,
         { status },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        createAxiosConfig()
       );
       
       // Refresh data
@@ -475,7 +572,7 @@ const Dashboard = () => {
       showSnackbar(`Task status updated to ${status}`, 'success');
     } catch (error) {
       console.error('Error updating task status:', error);
-      showSnackbar('Error updating task status', 'error');
+      showSnackbar(`Error updating task status: ${error.response?.data?.message || error.message}`, 'error');
     }
   };
 
@@ -513,16 +610,34 @@ const Dashboard = () => {
     }
   };
 
-  // Initial data fetch
+  // Initial data fetch - only run when token is available
   useEffect(() => {
-    fetchStats();
-    fetchChartData();
-    fetchTasks();
-    fetchTodayTasks();
-    fetchProjectStats();
-    fetchTaskProgress();
-    fetchRecentProjects();
-  }, []);
+    if (!token || !user) {
+      console.warn('Skipping data fetch - no token or user available');
+      return;
+    }
+
+    console.log('Fetching dashboard data with token:', !!token);
+    
+    const fetchAllData = async () => {
+      try {
+        await Promise.all([
+          fetchStats(),
+          fetchChartData(),
+          fetchTasks(),
+          fetchTodayTasks(),
+          fetchProjectStats(),
+          fetchTaskProgress(),
+          fetchRecentProjects()
+        ]);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        showSnackbar('Failed to load dashboard data', 'error');
+      }
+    };
+
+    fetchAllData();
+  }, [token, user]); // Add token and user as dependencies
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -535,6 +650,10 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<Refresh />}
           onClick={() => {
+            if (!token) {
+              showSnackbar('Authentication required for refresh', 'error');
+              return;
+            }
             fetchStats();
             fetchChartData();
             fetchTasks();
@@ -609,8 +728,6 @@ const Dashboard = () => {
                 </Box>
               )}
             </Box>
-
-          
           </Paper>
         </Grid>
 
