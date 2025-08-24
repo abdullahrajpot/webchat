@@ -48,6 +48,7 @@ import {
   RemoveCircle
 } from '@mui/icons-material';
 import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
+import { useTranslation } from 'react-i18next';
 
 const AllTasks = () => {
   const { user, token } = useAuth();
@@ -55,6 +56,8 @@ const AllTasks = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedTasks, setExpandedTasks] = useState(new Set());
+  const {t}= useTranslation();
+  
   const [pagination, setPagination] = useState({
     current: 1,
     total: 1,
@@ -270,10 +273,10 @@ const AllTasks = () => {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
-          Projects
+          {t('alltask.tasks')}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage all tasks across the system
+          {t('alltask.managetask')}
         </Typography>
       </Box>
 
@@ -285,7 +288,7 @@ const AllTasks = () => {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Search tasks..."
+                placeholder={t('alltask.searchtask')}
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 InputProps={{
@@ -295,48 +298,48 @@ const AllTasks = () => {
             </Grid>
             <Grid item xs={12} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
+                <InputLabel>{t('alltask.status')}</InputLabel>
                 <Select
                   value={filters.status}
                   label="Status"
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                 >
-                  <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="In Progress">In Progress</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="On Hold">On Hold</MenuItem>
+                  <MenuItem value="">{t('alltask.allstatus')}</MenuItem>
+                  <MenuItem value="Pending">{t('alltask.pending')}</MenuItem>
+                  <MenuItem value="In Progress">{t('alltask.inprogress')}</MenuItem>
+                  <MenuItem value="Completed">{t('alltask.completed')}</MenuItem>
+                  <MenuItem value="On Hold">{t('alltask.onhold')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Priority</InputLabel>
+                <InputLabel>{t('alltask.priority')}</InputLabel>
                 <Select
                   value={filters.priority}
                   label="Priority"
                   onChange={(e) => handleFilterChange('priority', e.target.value)}
                 >
-                  <MenuItem value="">All Priority</MenuItem>
-                  <MenuItem value="Low">Low</MenuItem>
-                  <MenuItem value="Medium">Medium</MenuItem>
-                  <MenuItem value="High">High</MenuItem>
-                  <MenuItem value="Urgent">Urgent</MenuItem>
+                  <MenuItem value="">{t('alltask.allpriorities')}</MenuItem>
+                  <MenuItem value="Low">{t('alltask.low')}</MenuItem>
+                  <MenuItem value="Medium">{t('alltask.medium')}</MenuItem>
+                  <MenuItem value="High">{t('alltask.high')}</MenuItem>
+                  <MenuItem value="Urgent">{t('alltask.urgent')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Sort By</InputLabel>
+                <InputLabel>{t('alltask.sortby')}</InputLabel>
                 <Select
                   value={filters.sortBy}
-                  label="Sort By"
+                  label={t('alltask.sortby')}
                   onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                 >
-                  <MenuItem value="createdAt">Created Date</MenuItem>
-                  <MenuItem value="deadline">Deadline</MenuItem>
-                  <MenuItem value="priority">Priority</MenuItem>
-                  <MenuItem value="status">Status</MenuItem>
+                  <MenuItem value="createdAt">{t('alltask.createddate')}</MenuItem>
+                  <MenuItem value="deadline">{t('alltask.deadline')}</MenuItem>
+                  <MenuItem value="priority">{t('alltask.priority')}</MenuItem>
+                  <MenuItem value="status">{t('alltask.status')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -348,7 +351,7 @@ const AllTasks = () => {
                 onClick={fetchTasks}
                 disabled={loading}
               >
-                Refresh
+                {t('alltask.refresh')}
               </Button>
             </Grid>
           </Grid>
@@ -368,7 +371,7 @@ const AllTasks = () => {
           {loading ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <CircularProgress />
-              <Typography sx={{ mt: 2 }}>Loading tasks...</Typography>
+              <Typography sx={{ mt: 2 }}>{t('alltask.loadingtask')}</Typography>
             </Box>
           ) : tasks.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 6 }}>
@@ -463,7 +466,7 @@ const AllTasks = () => {
                       {/* Deadline */}
                       <Box sx={{ minWidth: 120, textAlign: 'center' }}>
                         <Typography variant="caption" color="text.secondary" display="block">
-                          Deadline
+                         {t('alltask.deadline')}
                         </Typography>
                         <Typography 
                           variant="body2" 
@@ -479,7 +482,7 @@ const AllTasks = () => {
                       {/* Status */}
                       <Box sx={{ minWidth: 100, textAlign: 'center' }}>
                         <Typography variant="caption" color="text.secondary" display="block">
-                          Status
+                          {t('alltask.status')}
                         </Typography>
                         <Chip
                           label={task.status}
@@ -515,7 +518,7 @@ const AllTasks = () => {
                           </AvatarGroup>
                         ) : (
                           <Typography variant="caption" color="text.secondary">
-                            No assignees
+                           {t('alltask.noassigness')}
                           </Typography>
                         )}
                       </Box>
@@ -536,7 +539,7 @@ const AllTasks = () => {
                     <Divider />
                     <Box sx={{ p: 3, pt: 2 }}>
                       <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                        Description
+                        {t('alltask.description')}
                       </Typography>
                       <Typography 
                         color="text.secondary" 
@@ -557,12 +560,12 @@ const AllTasks = () => {
                         <Grid item xs={12} md={6}>
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                              Task Details
+                             {t('alltask.taskdetails')}
                             </Typography>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                               <Flag sx={{ fontSize: 16, color: 'text.secondary' }} />
                               <Typography variant="body2" color="text.secondary">
-                                Priority:
+                                {t('alltask.priority')}
                               </Typography>
                               <Chip
                                 label={task.priority}
@@ -573,13 +576,13 @@ const AllTasks = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                               <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
                               <Typography variant="body2" color="text.secondary">
-                                Created by: {task.creator?.name || 'Unknown'}
+                                {t('alltask.createdby')}: {task.creator?.name || 'Unknown'}
                               </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Assignment sx={{ fontSize: 16, color: 'text.secondary' }} />
                               <Typography variant="body2" color="text.secondary">
-                                Progress: {task.progress || 0}% complete
+                                {t('alltask.progress')}: {task.progress || 0}% complete
                               </Typography>
                             </Box>
                           </Box>
@@ -589,7 +592,7 @@ const AllTasks = () => {
                           {task.tags && task.tags.length > 0 && (
                             <Box>
                               <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                                Tags
+                               {t('alltask.tags')}
                               </Typography>
                               <Stack direction="row" spacing={1} flexWrap="wrap">
                                 {task.tags.map((tag, index) => (
@@ -629,17 +632,17 @@ const AllTasks = () => {
 
       {/* Edit Task Dialog */}
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Edit Task</DialogTitle>
+        <DialogTitle>{t('alltask.edittask')}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Title"
+              label={t('alltask.titles')}
               value={editForm.title}
               onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
               fullWidth
             />
             <TextField
-              label="Description"
+              label={t('alltask.description')}
               value={editForm.description}
               onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
@@ -647,33 +650,33 @@ const AllTasks = () => {
               fullWidth
             />
             <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
+              <InputLabel>{t('alltask.status')}</InputLabel>
               <Select
                 value={editForm.status}
                 label="Status"
                 onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
               >
-                <MenuItem value="Pending">Pending</MenuItem>
-                <MenuItem value="In Progress">In Progress</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-                <MenuItem value="On Hold">On Hold</MenuItem>
+                <MenuItem value="Pending">{t('alltask.pending')}</MenuItem>
+                <MenuItem value="In Progress">{t('alltask.inprogress')}</MenuItem>
+                <MenuItem value="Completed">{t('alltask.completed')}</MenuItem>
+                <MenuItem value="On Hold">{t('alltask.onhold')}</MenuItem>
               </Select>
             </FormControl>
             <FormControl fullWidth>
-              <InputLabel>Priority</InputLabel>
+              <InputLabel>{t('alltask.priority')}</InputLabel>
               <Select
                 value={editForm.priority}
-                label="Priority"
+                label={t('alltask.priority')}
                 onChange={(e) => setEditForm(prev => ({ ...prev, priority: e.target.value }))}
               >
-                <MenuItem value="Low">Low</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="High">High</MenuItem>
-                <MenuItem value="Urgent">Urgent</MenuItem>
+                <MenuItem value="Low">{t('alltask.low')}</MenuItem>
+                <MenuItem value="Medium">{t('alltask.medium')}</MenuItem>
+                <MenuItem value="High">{t('alltask.high')}</MenuItem>
+                <MenuItem value="Urgent">{t('alltask.urgent')}</MenuItem>
               </Select>
             </FormControl>
             <TextField
-              label="Progress"
+              label={t('alltask.progress')}
               type="number"
               value={editForm.progress}
               onChange={(e) => setEditForm(prev => ({ ...prev, progress: parseInt(e.target.value) }))}
@@ -681,7 +684,7 @@ const AllTasks = () => {
               fullWidth
             />
             <TextField
-              label="Deadline"
+              label={t('alltask.deadline')}
               type="date"
               value={editForm.deadline}
               onChange={(e) => setEditForm(prev => ({ ...prev, deadline: e.target.value }))}
@@ -691,7 +694,7 @@ const AllTasks = () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setEditDialogOpen(false)}>{t('alltask.cancel')}</Button>
           <Button 
             onClick={handleEditSubmit} 
             variant="contained"
@@ -730,10 +733,10 @@ const AllTasks = () => {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={handleEdit}>
-          <Edit sx={{ mr: 1 }} /> Edit Task
+          <Edit sx={{ mr: 1 }} /> {t('alltask.edittask')}
         </MenuItem>
         <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <Delete sx={{ mr: 1 }} /> Delete Task
+          <Delete sx={{ mr: 1 }} />{t('alltask.deletetask')}
         </MenuItem>
       </Menu>
     </Box>

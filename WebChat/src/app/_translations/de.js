@@ -55,5 +55,7 @@ export const deTranslation = {
     createnewgroup: "Neue Gruppe erstellen",
     admindashboard: "Admin Dashboard",
     typeamessage: "Nachricht eingeben...",
+    retry: "Wiederholen",
+    
   }
 };

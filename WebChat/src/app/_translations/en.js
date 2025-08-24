@@ -74,7 +74,42 @@ chat: {
 
 
 
+},
+
+alltask: {
+  projects: "Projects",
+  tasks: "Tasks",
+  managetask: "Manage all tasks in the system",
+  searchtask: "Search tasks...",
+  filterby: "Filter by",
+  allstatus: "All Status",
+  pending: "Pending",
+  inprogress: "In Progress",
+  complete: "Completed",
+  low: "Low",
+  onhold: "On Hold",
+  medium: "Medium",
+  high: "High",
+  urgent: "Urgent",
+  allpriorities: "All Priorities",
+  createddate: "Created Date",
+  refresh: "Refresh",
+  edittask: "Edit Task",
+  deletetask: "Delete Task",
+  description: "Description",
+  titles: "Title",
+  priority: "Priority",
+  deadline: "Deadline",
+  createdby: "Created By",
+  status: "Status",
+  taskdetails: "Task Details",
+  progress: "Progress",
+  tags: "Tags",
+  updatetask: "Update Task",
+  cancel: "Cancel",
+  sortby: "Sort by"
 }
+
 
 
 };
