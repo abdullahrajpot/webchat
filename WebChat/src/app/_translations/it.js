@@ -44,12 +44,13 @@ export const itTranslation = {
     clearform: "klare Form",
     save: "sparen",
     taskcreated: "Aufgabe erstellt",
-    selectteammember: "Wählen Sie Teammitglieder aus",
+    selecteamember: "Wählen Sie Teammitglieder aus",
     chosemember: "Wählen Sie aus, wer an dieser Aufgabe arbeiten soll",
     loadingteammembers: "Teammitglieder werden geladen...",
     nouser: "Keine Benutzer verfügbar. Bitte überprüfen Sie Ihre Benutzerdaten oder versuchen Sie eine Aktualisierung.",
     addselected: "Ausgewählte hinzufügen",
     whatneedtobedone: "was muss getan werden?",
+    cancel: "Abbrechen",
   },
 
   chat: {
@@ -72,9 +73,9 @@ export const itTranslation = {
     searchconversation: "Konversation suchen...",
     selectgroup: "Wählen Sie eine Gruppe aus oder erstellen Sie eine neue, um mit der Verwaltung von Konversationen zu beginnen",
   }
-  , 
+  ,
 
-  alltask:{
+  alltask: {
     projects: "Projekte",
     tasks: "Aufgaben",
     managetask: "Verwalten Sie alle Aufgaben im gesamten System",
@@ -93,9 +94,9 @@ export const itTranslation = {
     createddate: "Erstellungsdatum",
     refresh: "Aktualisieren",
     edittask: "Aufgabe bearbeiten",
-    deletetask : "Aufgabe Loschen",
-    description : "Beschreibung",
-    titles : "Titel",
+    deletetask: "Aufgabe Loschen",
+    description: "Beschreibung",
+    titles: "Titel",
     priority: "Prioritat",
     deadline: "Frist",
     createdby: "erstellt von",
@@ -105,7 +106,10 @@ export const itTranslation = {
     tags: "Stichworte",
     updatetask: "Aufgabe",
     cancel: "Abbrechen",
-    sortby: "Sortieren nach"
+    sortby: "Sortieren nach",
+    loadingtask: "Aufgabe wird geladen...",
+    noassigness: "Keine zugewiesenen Mitglieder",
+
 
 
   }

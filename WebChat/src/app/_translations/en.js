@@ -44,12 +44,13 @@ export const enTranslation = {
   clearform: "Clear Form",
   save: "Save",
   taskcreated: "Task Created",
-  selectteammember: "Select Team Members",
+  selecteamember: "Select Team Members",
   chosemember: "Choose who should work on this task",
   loadingteammembers: "Loading team members...",
   nouser: "No users available. Please check your user data or try refreshing.",
   addselected: "Add Selected",
   whatneedtobedone: "What needs to be done?",
+  cancel: "Cancel",
 },
 
 chat: {
@@ -107,7 +108,10 @@ alltask: {
   tags: "Tags",
   updatetask: "Update Task",
   cancel: "Cancel",
-  sortby: "Sort by"
+  sortby: "Sort by",
+    loadingtask: "Loading task...",
+    noassigness: "No assignees"
+
 }
 
 

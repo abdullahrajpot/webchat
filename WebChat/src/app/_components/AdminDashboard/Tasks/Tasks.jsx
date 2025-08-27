@@ -943,10 +943,10 @@ const Tasks = ({ onTaskCreated }) => {
             </Avatar>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {t('assigntask.selecteammembers')}
+                {t('assigntask.selecteamember')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {t('assigntask.chosemembers')}
+                {t('assigntask.chosemember')}
               </Typography>
             </Box>
             <Chip
