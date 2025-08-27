@@ -28,7 +28,8 @@ import {
     Chip,
     Badge,
     Alert,
-    CircularProgress
+    CircularProgress,
+    Popover
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -57,6 +58,8 @@ import {
 import { io } from 'socket.io-client';
 import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
 import { useTranslation } from 'react-i18next';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 const Chat = () => {
     const theme = useTheme();
@@ -75,6 +78,9 @@ const Chat = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState('');
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
+    const [openGroupInfo, setOpenGroupInfo] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState({ open: false, groupId: null, messageId: null });
+    const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
     const socketRef = useRef(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -220,6 +226,7 @@ const Chat = () => {
                         type: 'group',
                         members: group.members,
                         admin: group.admin,
+                        createdAt: group.createdAt,
                         messages: transformedMessages
                     };
                 } catch (msgError) {
@@ -230,6 +237,7 @@ const Chat = () => {
                         type: 'group',
                         members: group.members,
                         admin: group.admin,
+                        createdAt: group.createdAt,
                         messages: []
                     };
                 }
@@ -336,6 +344,23 @@ socketRef.current.on('newMessage', ({ groupId, message }) => {
                 socketRef.current.on('error', (error) => {
                     console.error('Socket error:', error);
                     if (mounted) setError(`Socket error: ${error}`);
+                });
+
+                // Listen for message deletions
+                socketRef.current.on('messageDeleted', ({ groupId, messageId }) => {
+                    if (!mounted) return;
+                    setGroups(prev => prev.map(group =>
+                        group.id === groupId
+                            ? { ...group, messages: (group.messages || []).filter(m => (m.id || m._id) !== messageId) }
+                            : group
+                    ));
+
+                    if (selectedChat && selectedChat.id === groupId) {
+                        setSelectedChat(prev => ({
+                            ...prev,
+                            messages: (prev.messages || []).filter(m => (m.id || m._id) !== messageId)
+                        }));
+                    }
                 });
 
                 // Load initial data
@@ -688,10 +713,107 @@ const filteredGroups = useMemo(() => {
         return ['jpg', 'jpeg', 'png', 'gif'].includes(ext);
     };
 
+    const handleDeleteMessage = async (groupId, messageId) => {
+        try {
+            setError('');
+            // Optimistic UI update
+            setGroups(prev => prev.map(group =>
+                group.id === groupId
+                    ? { ...group, messages: (group.messages || []).filter(m => (m.id || m._id) !== messageId) }
+                    : group
+            ));
+
+            if (selectedChat && selectedChat.id === groupId) {
+                setSelectedChat(prev => ({
+                    ...prev,
+                    messages: (prev.messages || []).filter(m => (m.id || m._id) !== messageId)
+                }));
+            }
+
+            // Call API
+            await apiCall(`/api/chat/groups/${groupId}/messages/${messageId}`, {
+                method: 'DELETE'
+            });
+
+            // Notify via socket (optional, depends on server)
+            if (socketRef.current && socketRef.current.connected) {
+                socketRef.current.emit('deleteMessage', { groupId, messageId });
+            }
+        } catch (err) {
+            console.error('Delete message failed:', err);
+            setError(`Failed to delete message: ${err.message}`);
+            // Refetch group messages as fallback
+            try {
+                const messages = await apiCall(`/api/chat/groups/${groupId}/messages`);
+                const transformedMessages = messages.map(msg => ({
+                    id: msg._id,
+                    senderId: msg.senderId._id,
+                    senderName: msg.senderId.name,
+                    content: msg.content,
+                    type: msg.type,
+                    timestamp: msg.timestamp,
+                    fileName: msg.fileName,
+                    fileSize: msg.fileSize,
+                    fileUrl: msg.fileUrl,
+                    fileType: msg.fileType
+                }));
+                setGroups(prev => prev.map(g => g.id === groupId ? { ...g, messages: transformedMessages } : g));
+                if (selectedChat && selectedChat.id === groupId) {
+                    setSelectedChat(prev => ({ ...prev, messages: transformedMessages }));
+                }
+            } catch {}
+        }
+    };
+
+    const requestDeleteMessage = (groupId, messageId) => {
+        setConfirmDelete({ open: true, groupId, messageId });
+    };
+
+    const handleConfirmDeleteClose = () => setConfirmDelete({ open: false, groupId: null, messageId: null });
+
+    const handleConfirmDeleteProceed = async () => {
+        const { groupId, messageId } = confirmDelete;
+        handleConfirmDeleteClose();
+        if (groupId && messageId) {
+            await handleDeleteMessage(groupId, messageId);
+        }
+    };
+
     const formatTime = (timestamp) => {
         if (!timestamp) return '';
         const date = new Date(timestamp);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDateLabel = (timestamp) => {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        const today = new Date();
+        const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const diffDays = Math.floor((startOfDay(today) - startOfDay(date)) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        return date.toLocaleDateString(undefined, { day: '2-digit', month: 'long' });
+    };
+
+    const groupMessagesByDate = (messages = []) => {
+        const groupsByDate = [];
+        const keyFor = (ts) => {
+            const d = new Date(ts);
+            return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        };
+        let currentKey = null;
+        let current = null;
+        for (const m of messages) {
+            const k = keyFor(m.timestamp || m.createdAt || m.updatedAt || Date.now());
+            if (k !== currentKey) {
+                currentKey = k;
+                current = { key: k, label: formatDateLabel(m.timestamp || m.createdAt || m.updatedAt), items: [] };
+                groupsByDate.push(current);
+            }
+            current.items.push(m);
+        }
+        return groupsByDate;
     };
 
     const handleMenuOpen = (event) => {
@@ -1188,7 +1310,7 @@ const filteredGroups = useMemo(() => {
                                         }
                                     }}
                                 >
-                                    <MenuItem onClick={handleMenuClose} sx={{ py: 1.5 }}>
+                                    <MenuItem onClick={() => { setOpenGroupInfo(true); handleMenuClose(); }} sx={{ py: 1.5 }}>
                                         <ListItemIcon>
                                             <InfoIcon fontSize="small" sx={{ color: '#64748b' }} />
                                         </ListItemIcon>
@@ -1226,141 +1348,183 @@ const filteredGroups = useMemo(() => {
                             p: 3,
                             background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%)'
                         }}>
-                            <Stack spacing={3}>
-                                {selectedChat.messages?.map((msg) => {
-                                    const isOwnMessage = msg.senderId === user.id;
-                                    const sender = users.find(u => u.id === msg.senderId) ||
-                                        (msg.senderId === user.id ? user : null);
+                            <Stack spacing={3} sx={{
+                                '& .message-row-action': { opacity: 0, transition: 'opacity 0.2s' },
+                                '& .message-row:hover .message-row-action': { opacity: 1 }
+                            }}>
+                                {groupMessagesByDate(selectedChat.messages || []).map((group) => (
+                                    <React.Fragment key={group.key}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                            <Chip label={group.label} sx={{ bgcolor: '#f1f5f9' }} />
+                                        </Box>
+                                        {group.items.map((msg) => {
+                                            const isOwnMessage = msg.senderId === user.id;
+                                            const sender = users.find(u => u.id === msg.senderId) ||
+                                                (msg.senderId === user.id ? user : null);
 
-                                    return (
-                                        <Box
-                                            key={msg.id || Math.random()}
-                                            sx={{
-                                                display: 'flex',
-                                                justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
-                                                alignItems: 'flex-end',
-                                                gap: 2
-                                            }}
-                                        >
-                                            {!isOwnMessage && (
-                                                <Avatar sx={{
-                                                    width: 36,
-                                                    height: 36,
-                                                    bgcolor: '#f1f5f9',
-                                                    color: '#475569',
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: 600
-                                                }}>
-                                                    {sender?.name?.charAt(0).toUpperCase() || '?'}
-                                                </Avatar>
-                                            )}
-                                            <Box sx={{ maxWidth: '70%' }}>
-                                                {!isOwnMessage && sender && (
-                                                    <Typography variant="caption" sx={{
-                                                        ml: 2,
-                                                        color: '#64748b',
-                                                        fontWeight: 500
-                                                    }}>
-                                                        {sender.name}
-                                                    </Typography>
-                                                )}
-                                                <Paper
-                                                    elevation={0}
+                                            return (
+                                                <Box
+                                                    key={msg.id || Math.random()}
                                                     sx={{
-                                                        p: 2,
-                                                        mt: 0.5,
-                                                        borderRadius: 3,
-                                                        bgcolor: isOwnMessage ? '#6366f1' : 'white',
-                                                        color: isOwnMessage ? 'white' : '#1e293b',
-                                                        borderTopLeftRadius: isOwnMessage ? 16 : 4,
-                                                        borderTopRightRadius: isOwnMessage ? 4 : 16,
-                                                        boxShadow: isOwnMessage ? '0 4px 20px rgba(99, 102, 241, 0.2)' : '0 2px 10px rgba(0,0,0,0.08)'
+                                                        display: 'flex',
+                                                        justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
+                                                        alignItems: 'flex-end',
+                                                        gap: 2
                                                     }}
+                                                    className="message-row"
                                                 >
-                                                    {msg.type === 'text' ? (
-                                                        <Typography sx={{ fontWeight: 400, lineHeight: 1.5 }}>
-                                                            {msg.content}
-                                                        </Typography>
-                                                    ) : msg.type === 'file' ? (
-                                                        <Box>
-                                                            {/* Show image preview if it's an image */}
-                                                            {isPreviewableImage(msg.fileType, msg.fileName) && msg.fileUrl && (
-                                                                <Box sx={{ mb: 2, maxWidth: 300 }}>
-                                                                    <img
-                                                                        src={`${API_BASE_URL}${msg.fileUrl}`}
-                                                                        alt={msg.fileName}
-                                                                        style={{
-                                                                            width: '100%',
-                                                                            height: 'auto',
-                                                                            borderRadius: 12,
-                                                                            cursor: 'pointer',
-                                                                            maxHeight: 200,
-                                                                            objectFit: 'cover'
-                                                                        }}
-                                                                        onClick={() => handleFileDownload(msg.fileUrl, msg.fileName)}
-                                                                        onError={(e) => {
-                                                                            e.target.style.display = 'none';
-                                                                        }}
-                                                                    />
-                                                                </Box>
-                                                            )}
-
-                                                            {/* File info */}
-                                                            <Stack direction="row" spacing={2} alignItems="center">
-                                                                <Box sx={{
-                                                                    p: 1.5,
-                                                                    borderRadius: 2,
-                                                                    bgcolor: isOwnMessage ? 'rgba(255,255,255,0.15)' : '#f8fafc'
-                                                                }}>
-                                                                    {getFileIcon(msg.fileType, msg.fileName)}
-                                                                </Box>
-                                                                <Box sx={{ flex: 1 }}>
-                                                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                                                        {msg.fileName}
-                                                                    </Typography>
-                                                                    <Typography variant="caption" sx={{
-                                                                        color: isOwnMessage ? 'rgba(255,255,255,0.8)' : '#64748b'
-                                                                    }}>
-                                                                        {msg.fileSize} • {msg.fileType || 'file'}
-                                                                    </Typography>
-                                                                </Box>
+                                                    {!isOwnMessage && (
+                                                        <Avatar sx={{
+                                                            width: 36,
+                                                            height: 36,
+                                                            bgcolor: '#f1f5f9',
+                                                            color: '#475569',
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: 600
+                                                        }}>
+                                                            {sender?.name?.charAt(0).toUpperCase() || '?'}
+                                                        </Avatar>
+                                                    )}
+                                                    <Box sx={{ maxWidth: '70%' }}>
+                                                        {!isOwnMessage && sender && (
+                                                            <Typography variant="caption" sx={{
+                                                                ml: 2,
+                                                                color: '#64748b',
+                                                                fontWeight: 500
+                                                            }}>
+                                                                {sender.name}
+                                                            </Typography>
+                                                        )}
+                                                        <Stack direction="row" spacing={1} alignItems="center">
+                                                            {(isAdmin || msg.senderId === user.id) && isOwnMessage && (
                                                                 <IconButton
+                                                                    onClick={() => requestDeleteMessage(selectedChat.id, msg.id || msg._id)}
                                                                     size="small"
-                                                                    onClick={() => handleFileDownload(msg.fileUrl, msg.fileName)}
-                                                                    disabled={!msg.fileUrl}
+                                                                    className="message-row-action"
                                                                     sx={{
-                                                                        bgcolor: isOwnMessage ? 'rgba(255,255,255,0.15)' : '#f8fafc',
-                                                                        '&:hover': {
-                                                                            bgcolor: isOwnMessage ? 'rgba(255,255,255,0.25)' : '#f1f5f9'
-                                                                        }
+                                                                        bgcolor: 'rgba(197, 59, 34, 0.12)',
+                                                                        '&:hover': { bgcolor: 'rgba(197, 59, 34, 0.12)' }
                                                                     }}
                                                                 >
-                                                                    <DownloadIcon sx={{ fontSize: '1rem' }} />
+                                                                    <DeleteIcon fontSize="3px" sx={{ color: '#FF0000' }} />
                                                                 </IconButton>
-                                                            </Stack>
-                                                        </Box>
-                                                    ) : (
-                                                        <Typography color="error">
-                                                            Unknown message type: {msg.type}
+                                                            )}
+                                                        <Paper
+                                                            elevation={0}
+                                                            sx={{
+                                                                p: 2,
+                                                                mt: 0.5,
+                                                                borderRadius: 3,
+                                                                bgcolor: isOwnMessage ? '#6366f1' : 'white',
+                                                                color: isOwnMessage ? 'white' : '#1e293b',
+                                                                borderTopLeftRadius: isOwnMessage ? 16 : 4,
+                                                                borderTopRightRadius: isOwnMessage ? 4 : 16,
+                                                                boxShadow: isOwnMessage ? '0 4px 20px rgba(99, 102, 241, 0.2)' : '0 2px 10px rgba(0,0,0,0.08)'
+                                                            }}
+                                                            className="message-bubble"
+                                                        >
+                                                            <Box sx={{ position: 'relative' }}>
+                                                            {msg.type === 'text' ? (
+                                                                <Typography sx={{ fontWeight: 400, lineHeight: 1.5 }}>
+                                                                    {msg.content}
+                                                                </Typography>
+                                                            ) : msg.type === 'file' ? (
+                                                                <Box>
+                                                                    {/* Show image preview if it's an image */}
+                                                                    {isPreviewableImage(msg.fileType, msg.fileName) && msg.fileUrl && (
+                                                                        <Box sx={{ mb: 2, maxWidth: 300 }}>
+                                                                            <img
+                                                                                src={`${API_BASE_URL}${msg.fileUrl}`}
+                                                                                alt={msg.fileName}
+                                                                                style={{
+                                                                                    width: '100%',
+                                                                                    height: 'auto',
+                                                                                    borderRadius: 12,
+                                                                                    cursor: 'pointer',
+                                                                                    maxHeight: 200,
+                                                                                    objectFit: 'cover'
+                                                                                }}
+                                                                                onClick={() => handleFileDownload(msg.fileUrl, msg.fileName)}
+                                                                                onError={(e) => {
+                                                                                    e.target.style.display = 'none';
+                                                                                }}
+                                                                            />
+                                                                        </Box>
+                                                                    )}
+
+                                                                    {/* File info */}
+                                                                    <Stack direction="row" spacing={2} alignItems="center">
+                                                                        <Box sx={{
+                                                                            p: 1.5,
+                                                                            borderRadius: 2,
+                                                                            bgcolor: isOwnMessage ? 'rgba(255,255,255,0.15)' : '#f8fafc'
+                                                                        }}>
+                                                                            {getFileIcon(msg.fileType, msg.fileName)}
+                                                                        </Box>
+                                                                        <Box sx={{ flex: 1 }}>
+                                                                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                                                                {msg.fileName}
+                                                                            </Typography>
+                                                                            <Typography variant="caption" sx={{
+                                                                                color: isOwnMessage ? 'rgba(255,255,255,0.8)' : '#64748b'
+                                                                            }}>
+                                                                                {msg.fileSize} • {msg.fileType || 'file'}
+                                                                            </Typography>
+                                                                        </Box>
+                                                                        <IconButton
+                                                                            size="small"
+                                                                            onClick={() => handleFileDownload(msg.fileUrl, msg.fileName)}
+                                                                            disabled={!msg.fileUrl}
+                                                                            sx={{
+                                                                                bgcolor: isOwnMessage ? 'rgba(255,255,255,0.15)' : '#f8fafc',
+                                                                                '&:hover': {
+                                                                                    bgcolor: isOwnMessage ? 'rgba(255,255,255,0.25)' : '#f1f5f9'
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <DownloadIcon sx={{ fontSize: '1rem' }} />
+                                                                        </IconButton>
+                                                                    </Stack>
+                                                                </Box>
+                                                            ) : (
+                                                                <Typography color="error">
+                                                                    Unknown message type: {msg.type}
+                                                                </Typography>
+                                                            )}
+                                                            </Box>
+                                                        </Paper>
+                                                            {(isAdmin || msg.senderId === user.id) && !isOwnMessage && (
+                                                                <IconButton
+                                                                    onClick={() => requestDeleteMessage(selectedChat.id, msg.id || msg._id)}
+                                                                    size="small"
+                                                                    className="message-row-action"
+                                                                    sx={{
+                                                                        bgcolor: 'rgba(197, 59, 34, 0.12)',
+                                                                        '&:hover': { bgcolor: 'rgba(197, 59, 34, 0.12)' }
+                                                                    }}
+                                                                >
+                                                                    <DeleteIcon fontSize="small" sx={{ color: '#FF0000' }} />
+                                                                </IconButton>
+                                                            )}
+                                                        </Stack>
+                                                        <Typography
+                                                            variant="caption"
+                                                            sx={{
+                                                                display: 'block',
+                                                                textAlign: isOwnMessage ? 'right' : 'left',
+                                                                mt: 1,
+                                                                ml: isOwnMessage ? 0 : 2,
+                                                                color: '#94a3b8'
+                                                            }}
+                                                        >
+                                                            {formatTime(msg.timestamp)}
                                                         </Typography>
-                                                    )}
-                                                </Paper>
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        display: 'block',
-                                                        textAlign: isOwnMessage ? 'right' : 'left',
-                                                        mt: 1,
-                                                        ml: isOwnMessage ? 0 : 2,
-                                                        color: '#94a3b8'
-                                                    }}
-                                                >
-                                                    {formatTime(msg.timestamp)}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    );
-                                })}
+                                                    </Box>
+                                                </Box>
+                                            );
+                                        })}
+                                    </React.Fragment>
+                                ))}
                                 <div ref={messagesEndRef} />
                             </Stack>
                         </Box>
@@ -1381,9 +1545,33 @@ const filteredGroups = useMemo(() => {
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
-                                                <IconButton sx={{ color: '#94a3b8' }}>
+                                                <IconButton sx={{ color: '#94a3b8' }} onClick={(e) => setEmojiAnchorEl(e.currentTarget)}>
                                                     <EmojiIcon />
                                                 </IconButton>
+                                                <Popover
+                                                    open={Boolean(emojiAnchorEl)}
+                                                    anchorEl={emojiAnchorEl}
+                                                    onClose={() => setEmojiAnchorEl(null)}
+                                                    anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+                                                    transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                                                >
+                                                    <Box sx={{ p: 1 }}>
+                                                        <Picker
+                                                            data={data}
+                                                            onEmojiSelect={(emoji) => {
+                                                                const native = emoji.native || emoji.shortcodes || '';
+                                                                // insert at cursor end for simplicity
+                                                                setMessage(prev => `${prev}${native}`);
+                                                            }}
+                                                            previewPosition="none"
+                                                            navPosition="bottom"
+                                                            searchPosition="top"
+                                                            maxFrequentRows={2}
+                                                            emojiSize={20}
+                                                            theme={theme.palette.mode === 'dark' ? 'dark' : 'light'}
+                                                        />
+                                                    </Box>
+                                                </Popover>
                                             </InputAdornment>
                                         ),
                                         endAdornment: (
@@ -1684,6 +1872,78 @@ const filteredGroups = useMemo(() => {
                     </DialogActions>
                 </Dialog>
             )}
+            {/* Group Info Dialog */
+            }
+            {selectedChat && selectedChat.type === 'group' && (
+                <Dialog
+                    open={openGroupInfo}
+                    onClose={() => setOpenGroupInfo(false)}
+                    fullWidth
+                    maxWidth="sm"
+                >
+                    <DialogTitle sx={{ pb: 1 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                            <Avatar sx={{ bgcolor: '#e0e7ff', color: '#6366f1', width: 48, height: 48 }}>
+                                <GroupsIcon />
+                            </Avatar>
+                            <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                                    {selectedChat.name}
+                                </Typography>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <Chip size="small" label={`${selectedChat.members?.length || 0} members`} />
+                                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                        Created {selectedChat.createdAt ? new Date(selectedChat.createdAt).toLocaleString() : '—'}
+                                    </Typography>
+                                </Stack>
+                            </Box>
+                        </Stack>
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ bgcolor: '#f8fafc' }}>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 1, color: '#64748b' }}>Description</Typography>
+                            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                                <Typography variant="body2" sx={{ color: '#475569' }}>
+                                    This is your group info panel. You can enhance it with group description, rules, or custom fields.
+                                </Typography>
+                            </Paper>
+                        </Box>
+                        <Typography variant="subtitle2" sx={{ mb: 1, color: '#64748b' }}>Members</Typography>
+                        <Paper variant="outlined" sx={{ borderRadius: 2 }}>
+                            <List>
+                                {(selectedChat.members || []).map((member) => (
+                                    <ListItem key={member._id || member.id} secondaryAction={<Chip size="small" label={member.role || 'member'} />}>
+                                        <ListItemAvatar>
+                                            <Avatar>{(member.name || member.email || '?').charAt(0).toUpperCase()}</Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText
+                                            primary={<Typography sx={{ fontWeight: 600 }}>{member.name || member.email || 'Unknown'}</Typography>}
+                                            secondary={<Typography variant="body2" sx={{ color: '#64748b' }}>{member.email}</Typography>}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Paper>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenGroupInfo(false)} sx={{ textTransform: 'none' }}>Close</Button>
+                    </DialogActions>
+                </Dialog>
+            )}
+
+            {/* Confirm Delete Dialog */}
+            <Dialog open={confirmDelete.open} onClose={handleConfirmDeleteClose} maxWidth="xs" fullWidth>
+                <DialogTitle>Delete message?</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                        This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleConfirmDeleteClose} sx={{ textTransform: 'none' }}>Cancel</Button>
+                    <Button color="error" variant="contained" onClick={handleConfirmDeleteProceed} sx={{ textTransform: 'none' }}>Delete</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

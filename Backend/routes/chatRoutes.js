@@ -355,4 +355,52 @@ router.get('/files/:filename', auth, async (req, res) => {
   }
 });
 
+
+// Delete a message in a group
+router.delete('/groups/:groupId/messages/:messageId', auth, async (req, res) => {
+  try {
+    const { groupId, messageId } = req.params;
+
+    // Ensure group exists and user is a member (admins bypass membership check if you prefer)
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    const isAdmin = req.user.role === 'admin';
+    const isMember = group.members.map(m => m.toString()).includes(req.user._id.toString());
+    if (!isAdmin && !isMember) {
+      return res.status(403).json({ error: 'Not authorized to access this group' });
+    }
+
+    // Find message
+    const message = await Message.findOne({ _id: messageId, groupId });
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Permission: admin can delete any; users can delete their own
+    const isOwner = message.senderId.toString() === req.user._id.toString();
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Not allowed to delete this message' });
+    }
+
+    // Delete
+    await Message.deleteOne({ _id: messageId });
+
+    // Optional: emit socket event if io is attached to app
+    // In server bootstrap, do: app.set('io', io);
+    const io = req.app.get('io');
+    if (io) {
+      io.to(groupId.toString()).emit('messageDeleted', { groupId: groupId.toString(), messageId: messageId.toString() });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Delete message error:', err);
+    return res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
+
+
 module.exports = router;
