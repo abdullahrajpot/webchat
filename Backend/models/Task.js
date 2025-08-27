@@ -200,6 +200,8 @@ taskSchema.pre('save', function(next) {
   next();
 });
 
+
+
 // Index for better query performance
 taskSchema.index({ creator: 1, status: 1 });
 taskSchema.index({ assignees: 1, status: 1 });

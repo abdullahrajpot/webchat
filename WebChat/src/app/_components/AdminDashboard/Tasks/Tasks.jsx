@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-// import { useAuth } from './useAuth'; // Import useAuth hook
 import {
   Box,
   Paper,
@@ -59,53 +58,10 @@ import axios from 'axios';
 import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
 import { useTranslation } from 'react-i18next';
 
-// API functions
-// Add this helper function to get the token
-const getAuthToken = () => {
-  const token = localStorage.getItem('token');
-  if (token) return token;
-
-  // Fallback to cookies if using cookie-based auth
-  const authCookie = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('auth-token='));
-  return authCookie ? authCookie.split('=')[1] : null;
-};
-
-const fetchUsers = async () => {
-  const token = getAuthToken();
-  const response = await axios.get('http://localhost:5001/api/users', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  return response.data;
-};
-
-// Function to get current user from auth cookie
-const getCurrentUserFromAuth = () => {
-  try {
-    const authCookie = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('auth-user='));
-
-    if (authCookie) {
-      const cookieValue = authCookie.split('=')[1];
-      const decodedValue = decodeURIComponent(cookieValue);
-      const authData = JSON.parse(decodedValue);
-      return authData.user;
-    }
-  } catch (error) {
-    console.error('Error parsing auth cookie:', error);
-  }
-  return null;
-};
-
 const Tasks = ({ onTaskCreated }) => {
   const navigate = useNavigate();
-  const { user: authUser, isAuthenticated } = useAuth(); // Get user from useAuth
+  const { user: authUser, isAuthenticated, token } = useAuth(); // GET TOKEN FROM useAuth
   const { t } = useTranslation();
-
 
   // Form states
   const [title, setTitle] = useState('');
@@ -127,32 +83,58 @@ const Tasks = ({ onTaskCreated }) => {
   const [usersLoading, setUsersLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Get current user from multiple sources
+  // API functions using consistent token approach
+  const fetchUsers = async () => {
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+    
+    const response = await axios.get('http://localhost:5001/api/users', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  };
+
+  const createTask = async (taskData) => {
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+    
+    try {
+      const response = await axios.post('http://localhost:5001/api/tasks', taskData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error.response?.data);
+      throw error;
+    }
+  };
+
+  // Get current user from auth hook directly
   useEffect(() => {
-    let user = null;
-
-    // First try useAuth
     if (authUser && (authUser._id || authUser.id)) {
-      user = authUser;
-      console.log('User from useAuth:', user);
-    }
-    // Fallback to cookie
-    else {
-      user = getCurrentUserFromAuth();
-      console.log('User from cookie:', user);
-    }
-
-    setCurrentUser(user);
-    console.log('Final current user:', user);
-
-    if (!user || (!user._id && !user.id)) {
+      setCurrentUser(authUser);
+      console.log('User from useAuth:', authUser);
+    } else if (!isAuthenticated || !token) {
       showSnackbar('Please login to create tasks', 'error');
     }
-  }, [authUser, isAuthenticated]);
+  }, [authUser, isAuthenticated, token]);
 
   // Fetch users and include current user
   useEffect(() => {
     const loadUsers = async () => {
+      if (!token) {
+        showSnackbar('Authentication required', 'error');
+        setUsersLoading(false);
+        return;
+      }
+
       try {
         setUsersLoading(true);
         console.log('Fetching users...');
@@ -178,18 +160,18 @@ const Tasks = ({ onTaskCreated }) => {
 
       } catch (err) {
         console.error('Error fetching users:', err);
-        showSnackbar('Failed to load users', 'error');
+        showSnackbar(`Failed to load users: ${err.message}`, 'error');
       } finally {
         setUsersLoading(false);
       }
     };
 
-    if (currentUser) {
+    if (currentUser && token) {
       loadUsers();
     } else {
       setUsersLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, token]);
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -199,26 +181,15 @@ const Tasks = ({ onTaskCreated }) => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const createTask = async (taskData) => {
-    const token = getAuthToken();
-    try {
-      const response = await axios.post('http://localhost:5001/api/tasks', taskData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('API Error:', error.response?.data);
-      throw error;
-    }
-  };
-
-  // STEP 5: Make sure your handleSubmit function creates proper objects
   const handleSubmit = async () => {
-    if (!currentUser || (!currentUser._id && !currentUser.id)) {
+    // Check authentication first
+    if (!isAuthenticated || !token) {
       showSnackbar('Please login to create tasks', 'error');
+      return;
+    }
+
+    if (!currentUser || (!currentUser._id && !currentUser.id)) {
+      showSnackbar('User information not available. Please try logging in again.', 'error');
       return;
     }
 
@@ -232,7 +203,6 @@ const Tasks = ({ onTaskCreated }) => {
 
       // Make sure attachments are proper objects
       const formattedAttachments = attachments.map(att => {
-        // Ensure all required fields are strings
         return {
           id: String(att.id || ''),
           name: String(att.name || ''),
@@ -249,12 +219,13 @@ const Tasks = ({ onTaskCreated }) => {
         priority,
         tags: tags.filter(tag => tag.trim()),
         assignees: selectedUsers,
-        attachments: formattedAttachments, // This should be an array of objects
+        attachments: formattedAttachments,
         creator: currentUser._id || currentUser.id,
         status: 'Pending'
       };
 
       console.log('About to send task data:', taskData);
+      console.log('Using token:', token ? 'Token available' : 'No token');
 
       const newTask = await createTask(taskData);
       showSnackbar('Task created successfully!');
@@ -266,7 +237,16 @@ const Tasks = ({ onTaskCreated }) => {
       }
     } catch (err) {
       console.error('Error creating task:', err);
-      showSnackbar(err.response?.data?.message || 'Failed to create task', 'error');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create task';
+      
+      // Special handling for auth errors
+      if (err.response?.status === 401) {
+        showSnackbar('Authentication failed. Please login again.', 'error');
+        // Optionally redirect to login
+        // navigate('/login');
+      } else {
+        showSnackbar(errorMessage, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -325,7 +305,7 @@ const Tasks = ({ onTaskCreated }) => {
   const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
     const newAttachments = files.map(file => ({
-      id: Date.now() + Math.random().toString(36).substr(2, 9), // Better ID generation
+      id: Date.now() + Math.random().toString(36).substr(2, 9),
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
       type: file.type,
@@ -372,6 +352,27 @@ const Tasks = ({ onTaskCreated }) => {
       minute: '2-digit'
     });
   };
+
+  // Show loading or error states
+  if (!isAuthenticated) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Alert severity="warning">
+          Please log in to create tasks.
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!token) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Alert severity="error">
+          Authentication token not found. Please log in again.
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{
