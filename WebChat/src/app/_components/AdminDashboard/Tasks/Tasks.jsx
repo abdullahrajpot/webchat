@@ -98,22 +98,56 @@ const Tasks = ({ onTaskCreated }) => {
   };
 
   const createTask = async (taskData) => {
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
+    if (!token) throw new Error('No authentication token available');
     
-    try {
-      const response = await axios.post('http://localhost:5001/api/tasks', taskData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    // Collect actual File objects to upload
+    const filesToUpload = (attachments || []).filter(a => a && a.file);
+
+    if (filesToUpload.length > 0) {
+      const form = new FormData();
+      form.append('title', taskData.title);
+      form.append('description', taskData.description || '');
+      if (taskData.deadline) form.append('deadline', taskData.deadline);
+      form.append('priority', taskData.priority);
+      form.append('status', taskData.status || 'Pending');
+      form.append('tags', JSON.stringify(taskData.tags || []));
+      form.append('assignees', JSON.stringify(taskData.assignees || []));
+
+      // Append files under the field name expected by backend upload.array('attachments')
+      filesToUpload.forEach(att => {
+        form.append('attachments', att.file, att.name || 'file');
+      });
+
+      // If there are any pre-existing attachments with URLs, send them too to be merged server-side
+      const preexisting = (attachments || [])
+        .filter(a => !a.file && (a.url || a.fileUrl || a.path || a.file_path))
+        .map(a => ({
+          id: String(a.id || ''),
+          name: String(a.name || ''),
+          size: String(a.size || ''),
+          type: String(a.type || ''),
+          url: a.url || a.fileUrl || a.path || a.file_path
+        }));
+      if (preexisting.length > 0) {
+        form.append('attachments', JSON.stringify(preexisting));
+      }
+
+      const response = await axios.post('http://localhost:5001/api/tasks', form, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
-    } catch (error) {
-      console.error('API Error:', error.response?.data);
-      throw error;
     }
+
+    // No files selected: only send attachments that already have a URL; otherwise omit
+    const sanitized = {
+      ...taskData,
+      attachments: (taskData.attachments || []).filter(a => a && (a.url || a.fileUrl || a.path || a.file_path))
+    };
+
+    const response = await axios.post('http://localhost:5001/api/tasks', sanitized, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    });
+    return response.data;
   };
 
   // Get current user from auth hook directly
@@ -201,16 +235,14 @@ const Tasks = ({ onTaskCreated }) => {
     try {
       setLoading(true);
 
-      // Make sure attachments are proper objects
-      const formattedAttachments = attachments.map(att => {
-        return {
-          id: String(att.id || ''),
-          name: String(att.name || ''),
-          size: String(att.size || ''),
-          type: String(att.type || ''),
-          url: att.url ? String(att.url) : undefined
-        };
-      });
+      // Normalize attachments for JSON fallback and for merging with uploaded files
+      const formattedAttachments = attachments.map(att => ({
+        id: String(att.id || ''),
+        name: String(att.name || ''),
+        size: String(att.size || ''),
+        type: String(att.type || ''),
+        url: att.url || att.fileUrl || att.path || att.file_path
+      }));
 
       const taskData = {
         title: title.trim(),
@@ -309,8 +341,9 @@ const Tasks = ({ onTaskCreated }) => {
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
       type: file.type,
+      file // keep the File object for upload
     }));
-    setAttachments([...attachments, ...newAttachments]);
+    setAttachments(prev => [...prev, ...newAttachments]);
   };
 
   const removeAttachment = (id) => {

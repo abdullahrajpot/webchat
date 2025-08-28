@@ -1,7 +1,37 @@
 const express = require('express');
 const Task = require('../models/Task');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const auth = require('../middleware/auth'); // Assuming you have auth middleware
 const router = express.Router();
+
+// Configure multer for task attachments (reuse chat strategy)
+const taskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'file-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: taskStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|mp4|mp3|zip|rar/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) return cb(null, true);
+    cb(new Error('Only specific file types are allowed!'));
+  }
+});
 
 // Get dashboard stats for user
 router.get('/dashboard/stats', auth, async (req, res) => {
@@ -557,10 +587,42 @@ router.patch('/:id/progress', auth, async (req, res) => {
 });
 
 // Create new task
-router.post('/', auth, async (req, res) => {
+// Create new task (supports JSON and multipart with files under field name "attachments")
+router.post('/', auth, upload.array('attachments'), async (req, res) => {
   try {
+    // If multipart, req.body fields come as strings; normalize types
+    const parseMaybeJson = (value) => {
+      if (typeof value !== 'string') return value;
+      try { return JSON.parse(value); } catch (_) { return value; }
+    };
+
+    const rawBody = Object.keys(req.body).length ? req.body : {};
+    const normalized = {
+      title: rawBody.title,
+      description: rawBody.description,
+      deadline: rawBody.deadline ? new Date(rawBody.deadline) : undefined,
+      priority: rawBody.priority,
+      tags: Array.isArray(rawBody.tags) ? rawBody.tags : parseMaybeJson(rawBody.tags) || [],
+      assignees: Array.isArray(rawBody.assignees) ? rawBody.assignees : parseMaybeJson(rawBody.assignees) || [],
+      status: rawBody.status
+    };
+
+    // Merge uploaded files with any client-provided attachments
+    const uploaded = (req.files || []).map(f => ({
+      id: String(Date.now() + Math.random().toString(36).slice(2)),
+      name: f.originalname,
+      size: (f.size / (1024 * 1024)).toFixed(1) + ' MB',
+      type: f.mimetype,
+      url: `/uploads/${path.basename(f.path)}`
+    }));
+
+    const clientAttachments = Array.isArray(rawBody.attachments)
+      ? rawBody.attachments
+      : parseMaybeJson(rawBody.attachments) || [];
+
     const taskData = {
-      ...req.body,
+      ...normalized,
+      attachments: [...clientAttachments, ...uploaded],
       creator: req.user._id
     };
 
@@ -687,6 +749,90 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Add these routes to your task router (replace the existing file routes)
+
+// Serve task files with proper authentication
+router.get('/files/:filename', auth, async (req, res) => {
+  try {
+    const filename = decodeURIComponent(req.params.filename);
+    const filePath = path.join(process.cwd(), 'uploads', filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const userId = req.user._id;
+    
+    // Check if user has access to this file through any task
+    const taskWithFile = await Task.findOne({
+      $or: [
+        { creator: userId },
+        { assignees: { $in: [userId] } }
+      ],
+      'attachments.url': { $regex: filename }
+    });
+
+    if (!taskWithFile) {
+      return res.status(403).json({ message: 'Access denied to this file' });
+    }
+
+    // Set appropriate headers
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+    
+  } catch (error) {
+    console.error('File access error:', error);
+    res.status(500).json({ message: 'Error accessing file' });
+  }
+});
+
+// Download file endpoint
+router.get('/files/:filename/download', auth, async (req, res) => {
+  try {
+    const filename = decodeURIComponent(req.params.filename);
+    const filePath = path.join(process.cwd(), 'uploads', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const userId = req.user._id;
+    
+    const taskWithFile = await Task.findOne({
+      $or: [
+        { creator: userId },
+        { assignees: { $in: [userId] } }
+      ],
+      'attachments.url': { $regex: filename }
+    });
+
+    if (!taskWithFile) {
+      return res.status(403).json({ message: 'Access denied to this file' });
+    }
+
+    // Find the attachment to get the original filename
+    const attachment = taskWithFile.attachments.find(att => 
+      att.url.includes(filename)
+    );
+
+    const originalFilename = attachment?.name || filename;
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${originalFilename}"`);
+    res.download(filePath, originalFilename);
+    
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ message: 'Error downloading file' });
   }
 });
 

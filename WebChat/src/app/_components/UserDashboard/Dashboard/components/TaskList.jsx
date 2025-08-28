@@ -45,7 +45,14 @@ import {
   ExpandMore,
   ExpandLess,
   AddCircle,
-  RemoveCircle
+  RemoveCircle,
+  CheckCircle,
+  PauseCircle,
+  PlayArrow,
+  Schedule,
+  AttachFile,
+  Visibility,
+  Download
 } from '@mui/icons-material';
 import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
 import { useTranslation } from 'react-i18next';
@@ -66,17 +73,9 @@ const TaskList = ({
   
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    title: '',
-    description: '',
-    status: '',
-    priority: '',
-    progress: 0,
-    deadline: '',
-    assignees: []
-  });
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [newStatus, setNewStatus] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const API_BASE_URL = 'http://localhost:5001';
 
@@ -125,61 +124,44 @@ const TaskList = ({
     setAnchorEl(null);
   };
 
-  const handleEdit = () => {
+  const handleStatusUpdate = () => {
     if (selectedTask) {
-      setEditForm({
-        title: selectedTask.title,
-        description: selectedTask.description,
-        status: selectedTask.status,
-        priority: selectedTask.priority,
-        progress: selectedTask.progress || 0,
-        deadline: selectedTask.deadline ? new Date(selectedTask.deadline).toISOString().split('T')[0] : '',
-        assignees: selectedTask.assignees?.map(a => a._id) || []
-      });
-      setEditDialogOpen(true);
+      setNewStatus(selectedTask.status);
+      setStatusDialogOpen(true);
     }
     handleMenuClose();
   };
 
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
-  };
+  const handleStatusSubmit = async () => {
+    if (!selectedTask || !newStatus) return;
 
-  const handleEditSubmit = async () => {
+    setUpdatingStatus(true);
     try {
-      await apiCall(`/api/tasks/${selectedTask._id}`, {
-        method: 'PUT',
-        body: JSON.stringify(editForm)
+      await apiCall(`/api/tasks/${selectedTask._id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
       });
-      setEditDialogOpen(false);
+      
+      setStatusDialogOpen(false);
       setSelectedTask(null);
-      // Refresh the task list by calling the parent's refresh function
-      onFilterChange({}); // This will trigger a refetch with current filters
+      setNewStatus('');
+      
+      // Refresh the task list
+      onFilterChange({});
     } catch (error) {
-      setError(`Failed to update task: ${error.message}`);
+      setError(`Failed to update task status: ${error.message}`);
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      if (!selectedTask._id) {
-        alert("No task selected for deletion");
-        return;
-      }
-
-      await apiCall(`/api/tasks/${selectedTask._id}`, { method: 'DELETE' });
-      
-      // Remove the task from the list
-      const updatedTasks = tasks.filter(task => task._id !== selectedTask._id);
-      // This would typically be handled by the parent component refreshing the data
-      onFilterChange({}); // Trigger a refetch
-      
-      setDeleteDialogOpen(false);
-      setSelectedTask(null);
-    } catch (error) {
-      console.error("Failed to delete task:", error);
-      setError("Failed to delete task");
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Completed': return <CheckCircle />;
+      case 'In Progress': return <PlayArrow />;
+      case 'Pending': return <Schedule />;
+      case 'On Hold': return <PauseCircle />;
+      default: return <Assignment />;
     }
   };
 
@@ -215,6 +197,121 @@ const TaskList = ({
   const isOverdue = (deadline) => {
     if (!deadline) return false;
     return new Date(deadline) < new Date();
+  };
+
+// Replace the viewAttachment and downloadAttachment functions with these:
+
+// Securely view an attachment
+const viewAttachment = async (attachment) => {
+  try {
+    const rawUrl = attachment?.url || attachment?.fileUrl || attachment?.file_path || attachment?.path;
+    if (!rawUrl) {
+      setError('No file URL provided');
+      return;
+    }
+
+    // Extract filename from URL
+    const filename = String(rawUrl).split('/').pop();
+    if (!filename) {
+      setError('Invalid file URL');
+      return;
+    }
+
+    // Use the view endpoint
+    const viewUrl = `${API_BASE_URL}/api/tasks/files/${encodeURIComponent(filename)}`;
+    
+    const response = await fetch(viewUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to view file: ${response.status}`);
+    }
+
+    // Open in new tab for viewing
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+    
+  } catch (error) {
+    console.error('View attachment error:', error);
+    setError(`Failed to view file: ${error.message}`);
+  }
+};
+
+// Add this helper function to your React component
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Securely download an attachment
+const downloadAttachment = async (attachment) => {
+  try {
+    const rawUrl = attachment?.url || attachment?.fileUrl || attachment?.file_path || attachment?.path;
+    if (!rawUrl) {
+      setError('No file URL provided');
+      return;
+    }
+
+    // Extract filename from URL
+    const filename = String(rawUrl).split('/').pop();
+    if (!filename) {
+      setError('Invalid file URL');
+      return;
+    }
+
+    // Use the download endpoint
+    const downloadUrl = `${API_BASE_URL}/api/tasks/files/${encodeURIComponent(filename)}/download`;
+    
+    const response = await fetch(downloadUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.status}`);
+    }
+
+    // Get the blob and create download link
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    
+    // Use the original filename if available, otherwise use the stored filename
+    link.download = attachment.name || filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+    
+  } catch (error) {
+    console.error('Download attachment error:', error);
+    setError(`Failed to download file: ${error.message}`);
+  }
+};
+
+  // Calculate progress based on task status
+  const calculateProgress = (task) => {
+    switch (task.status) {
+      case 'Completed':
+        return 100;
+      case 'In Progress':
+        return task.progress || 50; // Default to 50% if no progress set
+      case 'On Hold':
+        return task.progress || 25; // Default to 25% if no progress set
+      case 'Pending':
+        return 0;
+      default:
+        return task.progress || 0;
+    }
   };
 
   return (
@@ -374,14 +471,14 @@ const TaskList = ({
                       <Box sx={{ minWidth: 200, mr: 2 }}>
                         <LinearProgress
                           variant="determinate"
-                          value={task.progress || 0}
+                          value={calculateProgress(task)}
                           sx={{ 
                             height: 8, 
                             borderRadius: 4,
                             backgroundColor: 'grey.200',
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 4,
-                              backgroundColor: task.progress === 100 ? 'success.main' : 'primary.main'
+                              backgroundColor: calculateProgress(task) === 100 ? 'success.main' : 'primary.main'
                             }
                           }}
                         />
@@ -506,7 +603,7 @@ const TaskList = ({
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Assignment sx={{ fontSize: 16, color: 'text.secondary' }} />
                               <Typography variant="body2" color="text.secondary">
-                                {t('alltask.progress')}: {task.progress || 0}% complete
+                                {t('alltask.progress')}: {calculateProgress(task)}% complete
                               </Typography>
                             </Box>
                           </Box>
@@ -531,6 +628,58 @@ const TaskList = ({
                               </Stack>
                             </Box>
                           )}
+{task.attachments && task.attachments.length > 0 && (
+  <Box sx={{ mt: 3 }}>
+    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+      Attachments
+    </Typography>
+    <Stack spacing={1}>
+      {task.attachments.map((attachment) => (
+        <Paper 
+          key={attachment.id || attachment._id} 
+          variant="outlined" 
+          sx={{ 
+            p: 2, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            borderRadius: 1
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+            <AttachFile sx={{ color: 'primary.main', flexShrink: 0 }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+                {attachment.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatFileSize(attachment.size)} • {attachment.type}
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+            <Button 
+              size="small" 
+              variant="outlined" 
+              onClick={() => viewAttachment(attachment)}
+              startIcon={<Visibility />}
+            >
+              View
+            </Button>
+            <Button 
+              size="small" 
+              variant="contained" 
+              onClick={() => downloadAttachment(attachment)}
+              startIcon={<Download />}
+            >
+              Download
+            </Button>
+          </Box>
+        </Paper>
+      ))}
+    </Stack>
+  </Box>
+)}
                         </Grid>
                       </Grid>
                     </Box>
@@ -554,98 +703,63 @@ const TaskList = ({
         </CardContent>
       </Card>
 
-      {/* Edit Task Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{t('alltask.edittask')}</DialogTitle>
+      {/* Status Update Dialog */}
+      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {getStatusIcon(newStatus)}
+            Update Task Status
+          </Box>
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label={t('alltask.titles')}
-              value={editForm.title}
-              onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-              fullWidth
-            />
-            <TextField
-              label={t('alltask.description')}
-              value={editForm.description}
-              onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-              multiline
-              rows={3}
-              fullWidth
-            />
-            <FormControl fullWidth>
-              <InputLabel>{t('alltask.status')}</InputLabel>
-              <Select
-                value={editForm.status}
-                label="Status"
-                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              >
-                <MenuItem value="Pending">{t('alltask.pending')}</MenuItem>
-                <MenuItem value="In Progress">{t('alltask.inprogress')}</MenuItem>
-                <MenuItem value="Completed">{t('alltask.completed')}</MenuItem>
-                <MenuItem value="On Hold">{t('alltask.onhold')}</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl fullWidth>
-              <InputLabel>{t('alltask.priority')}</InputLabel>
-              <Select
-                value={editForm.priority}
-                label={t('alltask.priority')}
-                onChange={(e) => setEditForm(prev => ({ ...prev, priority: e.target.value }))}
-              >
-                <MenuItem value="Low">{t('alltask.low')}</MenuItem>
-                <MenuItem value="Medium">{t('alltask.medium')}</MenuItem>
-                <MenuItem value="High">{t('alltask.high')}</MenuItem>
-                <MenuItem value="Urgent">{t('alltask.urgent')}</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label={t('alltask.progress')}
-              type="number"
-              value={editForm.progress}
-              onChange={(e) => setEditForm(prev => ({ ...prev, progress: parseInt(e.target.value) }))}
-              inputProps={{ min: 0, max: 100 }}
-              fullWidth
-            />
-            <TextField
-              label={t('alltask.deadline')}
-              type="date"
-              value={editForm.deadline}
-              onChange={(e) => setEditForm(prev => ({ ...prev, deadline: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>{t('alltask.cancel')}</Button>
-          <Button 
-            onClick={handleEditSubmit} 
-            variant="contained"
-            disabled={loading}
-          >
-            Update Task
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete the task "{selectedTask?.title}"? This action cannot be undone.
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Update status for task: <strong>{selectedTask?.title}</strong>
           </Typography>
+          <FormControl fullWidth>
+            <InputLabel>New Status</InputLabel>
+            <Select
+              value={newStatus}
+              label="New Status"
+              onChange={(e) => setNewStatus(e.target.value)}
+            >
+              <MenuItem value="Pending">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Schedule color="warning" />
+                  Pending
+                </Box>
+              </MenuItem>
+              <MenuItem value="In Progress">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PlayArrow color="info" />
+                  In Progress
+                </Box>
+              </MenuItem>
+              <MenuItem value="Completed">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircle color="success" />
+                  Completed
+                </Box>
+              </MenuItem>
+              <MenuItem value="On Hold">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PauseCircle color="default" />
+                  On Hold
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setStatusDialogOpen(false)} disabled={updatingStatus}>
+            Cancel
+          </Button>
           <Button 
-            onClick={handleDeleteConfirm} 
-            color="error"
+            onClick={handleStatusSubmit} 
             variant="contained"
-            disabled={loading}
+            disabled={updatingStatus || !newStatus}
+            startIcon={updatingStatus ? <CircularProgress size={16} /> : null}
           >
-            Delete
+            {updatingStatus ? 'Updating...' : 'Update Status'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -656,11 +770,8 @@ const TaskList = ({
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleEdit}>
-          <Edit sx={{ mr: 1 }} /> {t('alltask.edittask')}
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <Delete sx={{ mr: 1 }} />{t('alltask.deletetask')}
+        <MenuItem onClick={handleStatusUpdate}>
+          <Edit sx={{ mr: 1 }} /> Update Status
         </MenuItem>
       </Menu>
     </Box>

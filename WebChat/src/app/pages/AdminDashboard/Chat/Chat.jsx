@@ -53,13 +53,15 @@ import {
     Delete as DeleteIcon,
     Download as DownloadIcon,
     Circle as CircleIcon,
-    Error as ErrorIcon
+    Error as ErrorIcon,
+    Edit as EditIcon
 } from '@mui/icons-material';
 import { io } from 'socket.io-client';
 import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
 import { useTranslation } from 'react-i18next';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { toast } from 'react-toastify';
 
 const Chat = () => {
     const theme = useTheme();
@@ -81,6 +83,12 @@ const Chat = () => {
     const [openGroupInfo, setOpenGroupInfo] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState({ open: false, groupId: null, messageId: null });
     const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
+    const [editGroupMode, setEditGroupMode] = useState(false);
+    const [editGroupForm, setEditGroupForm] = useState({
+        name: '',
+        members: []
+    });
+    const [updatingGroup, setUpdatingGroup] = useState(false);
     const socketRef = useRef(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -777,6 +785,75 @@ const filteredGroups = useMemo(() => {
         if (groupId && messageId) {
             await handleDeleteMessage(groupId, messageId);
         }
+        toast.success("Message deleted succesfully")
+    };
+
+    // Group editing functions
+    const handleEditGroup = () => {
+        if (selectedChat) {
+            setEditGroupForm({
+                name: selectedChat.name,
+                members: selectedChat.members?.map(m => m._id || m.id) || []
+            });
+            setEditGroupMode(true);
+        }
+    };
+
+    const handleEditGroupCancel = () => {
+        setEditGroupMode(false);
+        setEditGroupForm({ name: '', members: [] });
+    };
+
+    const handleEditGroupSave = async () => {
+        if (!selectedChat || !editGroupForm.name.trim()) return;
+
+        setUpdatingGroup(true);
+        try {
+            // Update group via API
+            await apiCall(`/api/chat/groups/${selectedChat.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    name: editGroupForm.name.trim(),
+                    members: editGroupForm.members
+                })
+            });
+
+            // Update local state
+            setGroups(prev => prev.map(group =>
+                group.id === selectedChat.id
+                    ? {
+                        ...group,
+                        name: editGroupForm.name.trim(),
+                        members: users.filter(u => editGroupForm.members.includes(u.id))
+                    }
+                    : group
+            ));
+
+            // Update selectedChat
+            setSelectedChat(prev => ({
+                ...prev,
+                name: editGroupForm.name.trim(),
+                members: users.filter(u => editGroupForm.members.includes(u.id))
+            }));
+
+            setEditGroupMode(false);
+            setEditGroupForm({ name: '', members: [] });
+            toast.success("Group updated successfully");
+        } catch (error) {
+            console.error('Error updating group:', error);
+            setError(`Failed to update group: ${error.message}`);
+        } finally {
+            setUpdatingGroup(false);
+        }
+    };
+
+    const toggleMemberSelectionInEdit = (userId) => {
+        setEditGroupForm(prev => ({
+            ...prev,
+            members: prev.members.includes(userId)
+                ? prev.members.filter(id => id !== userId)
+                : [...prev.members, userId]
+        }));
     };
 
     const formatTime = (timestamp) => {
@@ -861,6 +938,8 @@ const filteredGroups = useMemo(() => {
             display: 'flex',
             height: '100vh',
             bgcolor: '#f8fafc',
+            broder: '1px solid',
+            borderRadius: 10,
             fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif'
         }}>
             {/* Error Alert */}
@@ -1877,26 +1956,82 @@ const filteredGroups = useMemo(() => {
             {selectedChat && selectedChat.type === 'group' && (
                 <Dialog
                     open={openGroupInfo}
-                    onClose={() => setOpenGroupInfo(false)}
+                    onClose={() => {
+                        setOpenGroupInfo(false);
+                        setEditGroupMode(false);
+                        setEditGroupForm({ name: '', members: [] });
+                    }}
                     fullWidth
-                    maxWidth="sm"
+                    maxWidth="md"
                 >
                     <DialogTitle sx={{ pb: 1 }}>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar sx={{ bgcolor: '#e0e7ff', color: '#6366f1', width: 48, height: 48 }}>
-                                <GroupsIcon />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                                    {selectedChat.name}
-                                </Typography>
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                    <Chip size="small" label={`${selectedChat.members?.length || 0} members`} />
-                                    <Typography variant="caption" sx={{ color: '#64748b' }}>
-                                        Created {selectedChat.createdAt ? new Date(selectedChat.createdAt).toLocaleString() : '—'}
-                                    </Typography>
+                        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+                            <Stack direction="row" spacing={2} alignItems="center">
+                                <Avatar sx={{ bgcolor: '#e0e7ff', color: '#6366f1', width: 48, height: 48 }}>
+                                    <GroupsIcon />
+                                </Avatar>
+                                <Box>
+                                    {editGroupMode ? (
+                                        <TextField
+                                            value={editGroupForm.name}
+                                            onChange={(e) => setEditGroupForm(prev => ({ ...prev, name: e.target.value }))}
+                                            variant="standard"
+                                            sx={{ 
+                                                '& .MuiInputBase-input': { 
+                                                    fontSize: '1.25rem', 
+                                                    fontWeight: 700,
+                                                    color: '#1e293b'
+                                                }
+                                            }}
+                                        />
+                                    ) : (
+                                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                                            {selectedChat.name}
+                                        </Typography>
+                                    )}
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <Chip size="small" label={`${selectedChat.members?.length || 0} members`} />
+                                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                            Created {selectedChat.createdAt ? new Date(selectedChat.createdAt).toLocaleString() : '—'}
+                                        </Typography>
+                                    </Stack>
+                                </Box>
+                            </Stack>
+                            {isAdmin && selectedChat.admin?._id === user.id && (
+                                <Stack direction="row" spacing={1}>
+                                    {editGroupMode ? (
+                                        <>
+                                            <Button
+                                                size="small"
+                                                onClick={handleEditGroupCancel}
+                                                disabled={updatingGroup}
+                                                sx={{ textTransform: 'none' }}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                onClick={handleEditGroupSave}
+                                                disabled={updatingGroup || !editGroupForm.name.trim()}
+                                                sx={{ textTransform: 'none' }}
+                                            >
+                                                {updatingGroup ? 'Saving...' : 'Save'}
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<EditIcon />}
+                                            onClick={handleEditGroup}
+                                            sx={{ textTransform: 'none' }}
+                                        >
+                                            Edit Group
+                                        </Button>
+                                    )}
                                 </Stack>
-                            </Box>
+                            )}
                         </Stack>
                     </DialogTitle>
                     <DialogContent dividers sx={{ bgcolor: '#f8fafc' }}>
@@ -1908,25 +2043,87 @@ const filteredGroups = useMemo(() => {
                                 </Typography>
                             </Paper>
                         </Box>
-                        <Typography variant="subtitle2" sx={{ mb: 1, color: '#64748b' }}>Members</Typography>
-                        <Paper variant="outlined" sx={{ borderRadius: 2 }}>
-                            <List>
-                                {(selectedChat.members || []).map((member) => (
-                                    <ListItem key={member._id || member.id} secondaryAction={<Chip size="small" label={member.role || 'member'} />}>
-                                        <ListItemAvatar>
-                                            <Avatar>{(member.name || member.email || '?').charAt(0).toUpperCase()}</Avatar>
-                                        </ListItemAvatar>
-                                        <ListItemText
-                                            primary={<Typography sx={{ fontWeight: 600 }}>{member.name || member.email || 'Unknown'}</Typography>}
-                                            secondary={<Typography variant="body2" sx={{ color: '#64748b' }}>{member.email}</Typography>}
-                                        />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Paper>
+                        
+                        <Box sx={{ mb: 3 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                <Typography variant="subtitle2" sx={{ color: '#64748b' }}>
+                                    {editGroupMode ? 'Edit Members' : 'Members'}
+                                </Typography>
+                                {editGroupMode && (
+                                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                        {editGroupForm.members.length} selected
+                                    </Typography>
+                                )}
+                            </Stack>
+                            
+                            {editGroupMode ? (
+                                <Paper variant="outlined" sx={{ borderRadius: 2, maxHeight: 300, overflowY: 'auto' }}>
+                                    <List>
+                                        {users.map((userItem) => (
+                                            <ListItem key={userItem.id} disablePadding>
+                                                <ListItemButton
+                                                    onClick={() => toggleMemberSelectionInEdit(userItem.id)}
+                                                    sx={{ borderRadius: 1, mx: 1, my: 0.5 }}
+                                                >
+                                                    <ListItemAvatar>
+                                                        <Avatar sx={{ width: 32, height: 32 }}>
+                                                            {userItem.name.charAt(0).toUpperCase()}
+                                                        </Avatar>
+                                                    </ListItemAvatar>
+                                                    <ListItemText
+                                                        primary={
+                                                            <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                                                {userItem.name}
+                                                            </Typography>
+                                                        }
+                                                        secondary={
+                                                            <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                                                {userItem.email}
+                                                            </Typography>
+                                                        }
+                                                    />
+                                                    <Checkbox
+                                                        checked={editGroupForm.members.includes(userItem.id)}
+                                                        sx={{
+                                                            color: '#6366f1',
+                                                            '&.Mui-checked': { color: '#6366f1' }
+                                                        }}
+                                                    />
+                                                </ListItemButton>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Paper>
+                            ) : (
+                                <Paper variant="outlined" sx={{ borderRadius: 2 }}>
+                                    <List>
+                                        {(selectedChat.members || []).map((member) => (
+                                            <ListItem key={member._id || member.id} secondaryAction={<Chip size="small" label={member.role || 'member'} />}>
+                                                <ListItemAvatar>
+                                                    <Avatar>{(member.name || member.email || '?').charAt(0).toUpperCase()}</Avatar>
+                                                </ListItemAvatar>
+                                                <ListItemText
+                                                    primary={<Typography sx={{ fontWeight: 600 }}>{member.name || member.email || 'Unknown'}</Typography>}
+                                                    secondary={<Typography variant="body2" sx={{ color: '#64748b' }}>{member.email}</Typography>}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Paper>
+                            )}
+                        </Box>
                     </DialogContent>
                     <DialogActions sx={{ p: 2 }}>
-                        <Button onClick={() => setOpenGroupInfo(false)} sx={{ textTransform: 'none' }}>Close</Button>
+                        <Button 
+                            onClick={() => {
+                                setOpenGroupInfo(false);
+                                setEditGroupMode(false);
+                                setEditGroupForm({ name: '', members: [] });
+                            }} 
+                            sx={{ textTransform: 'none' }}
+                        >
+                            Close
+                        </Button>
                     </DialogActions>
                 </Dialog>
             )}

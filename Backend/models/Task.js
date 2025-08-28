@@ -106,6 +106,15 @@
 
 const mongoose = require('mongoose');
 
+// Store uploaded file metadata on tasks
+const attachmentSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  size: { type: String, required: true },
+  type: { type: String, required: true },
+  url: { type: String }
+}, { _id: false });
+
 const taskSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -123,7 +132,7 @@ const taskSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    enum: ['Low', 'Medium', 'High'],
+    enum: ['Low', 'Medium', 'High', 'Urgent'],
     default: 'Medium'
   },
   progress: {
@@ -153,6 +162,7 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  attachments: [attachmentSchema],
   // New fields for enhanced dashboard functionality
   estimatedHours: {
     type: Number,
