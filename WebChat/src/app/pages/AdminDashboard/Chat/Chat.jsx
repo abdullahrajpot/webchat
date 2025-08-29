@@ -936,7 +936,8 @@ const filteredGroups = useMemo(() => {
     return (
         <Box sx={{
             display: 'flex',
-            height: '100vh',
+            flexDirection: isMobile ? 'column' : 'row',
+            height: isMobile ? 'auto' : '100vh',
             bgcolor: '#f8fafc',
             broder: '1px solid',
             borderRadius: 10,
@@ -1015,11 +1016,12 @@ const filteredGroups = useMemo(() => {
 
             {/* Sidebar */}
             <Paper elevation={0} sx={{
-                width: 380,
+                width: isMobile ? '100%' : 380,
                 display: 'flex',
                 flexDirection: 'column',
                 bgcolor: 'white',
-                borderRight: '1px solid #e2e8f0'
+                borderRight: isMobile ? 'none' : '1px solid #e2e8f0',
+                borderBottom: isMobile ? '1px solid #e2e8f0' : 'none'
             }}>
                 {/* Header */}
                 <Box sx={{ p: 3, borderBottom: '1px solid #f1f5f9' }}>

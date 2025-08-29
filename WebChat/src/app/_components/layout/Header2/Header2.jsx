@@ -39,14 +39,14 @@ function Header2() {
       position="fixed" // Changed from 'static' to 'fixed'
       elevation={0}
       sx={{
-        width: '100vw', // Use viewport width
+        width: '100%',
         left: 0,
         right: 0,
         backgroundColor: 'background.paper',
         color: 'text.primary',
         borderBottom: '1px solid',
         borderColor: 'divider',
-        py: 1,
+        py: { xs: 0.5, sm: 1 },
         zIndex: theme.zIndex.drawer + 1 // Ensure it stays above other content
       }}
     >
@@ -57,9 +57,9 @@ function Header2() {
           width: '100%'
         }}
       >
-        <Toolbar disableGutters sx={{ width: '100%' }}>
+        <Toolbar disableGutters sx={{ width: '100%', minHeight: { xs: 56, sm: 64 } }}>
           {/* Left Section - Logo and Navigation */}
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: { xs: 2, md: 4 } }}>
             <Logo />
             
             {isSidebarStyle(SIDEBAR_STYLES.CLIPPED_UNDER_HEADER) && !isBelowLg && (
@@ -67,7 +67,7 @@ function Header2() {
             )}
 
             {/* Navigation Links */}
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: 4, gap: 4 }}>
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: { md: 2, lg: 4 }, gap: { md: 2, lg: 4 } }}>
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -94,14 +94,14 @@ function Header2() {
             flexGrow: 1, 
             display: 'flex', 
             justifyContent: 'center',
-            mx: 2
+            mx: { xs: 1, sm: 2 }
           }}>
             <Search show={searchVisibility} onClose={handleSearchVisibility} />
             <SearchIconButtonOnSmallScreen onClick={handleSearchVisibility} />
           </Box>
 
           {/* Right Section - Icons and User */}
-          <Stack direction="row" spacing={1} alignItems="center" gap={2}>
+          <Stack direction="row" spacing={{ xs: 1, sm: 1.5 }} alignItems="center" gap={{ xs: 1, sm: 2 }}>
             <ThemeModeOption />
             <TranslationPopover />
             <AuthUserPopover />

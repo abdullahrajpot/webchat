@@ -376,7 +376,14 @@ const Dashboard = () => {
 
 
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 4,
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Dashboard
         </Typography>
@@ -409,7 +416,7 @@ const Dashboard = () => {
 
         {/* Task Progress Chart */}
         <Grid item xs={12} lg={4}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: { xs: 'auto', lg: 400 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Task Progress</Typography>
               <IconButton size="small">
@@ -467,7 +474,7 @@ const Dashboard = () => {
 
         {/* Project Statistics */}
         <Grid item xs={12} lg={4}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: { xs: 'auto', lg: 400 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6">Project Statistic</Typography>
               <IconButton size="small">
@@ -544,7 +551,7 @@ const Dashboard = () => {
 
         {/* Project Overview & Today's Tasks */}
         <Grid item xs={12} lg={4}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: { xs: 'auto', lg: 400 } }}>
             {/* Project Overview Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Project Overview</Typography>

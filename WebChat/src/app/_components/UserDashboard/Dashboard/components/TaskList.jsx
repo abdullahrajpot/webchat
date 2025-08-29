@@ -423,8 +423,13 @@ const downloadAttachment = async (attachment) => {
                   }}
                 >
                   {/* Main Task Card Header */}
-                  <Box sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ p: { xs: 2, md: 3 } }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 2,
+                      flexWrap: { xs: 'wrap', md: 'nowrap' }
+                    }}>
                       {/* Expand/Collapse Button */}
                       <IconButton
                         onClick={() => toggleTaskExpansion(task._id)}
@@ -457,7 +462,7 @@ const downloadAttachment = async (attachment) => {
                       </Avatar>
 
                       {/* Task Info */}
-                      <Box sx={{ flex: 1 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
                           {task.title}
                         </Typography>
@@ -468,7 +473,7 @@ const downloadAttachment = async (attachment) => {
                       </Box>
 
                       {/* Progress Bar */}
-                      <Box sx={{ minWidth: 200, mr: 2 }}>
+                      <Box sx={{ minWidth: { xs: '100%', sm: 180 }, mr: { xs: 0, md: 2 } }}>
                         <LinearProgress
                           variant="determinate"
                           value={calculateProgress(task)}
@@ -485,7 +490,7 @@ const downloadAttachment = async (attachment) => {
                       </Box>
 
                       {/* Deadline */}
-                      <Box sx={{ minWidth: 120, textAlign: 'center' }}>
+                      <Box sx={{ minWidth: { xs: 'auto', md: 120 }, textAlign: { xs: 'left', md: 'center' }, flex: { xs: '1 1 45%', md: '0 0 auto' } }}>
                         <Typography variant="caption" color="text.secondary" display="block">
                          {t('alltask.deadline')}
                         </Typography>
@@ -501,7 +506,7 @@ const downloadAttachment = async (attachment) => {
                       </Box>
 
                       {/* Status */}
-                      <Box sx={{ minWidth: 100, textAlign: 'center' }}>
+                      <Box sx={{ minWidth: { xs: 'auto', md: 100 }, textAlign: { xs: 'left', md: 'center' }, flex: { xs: '1 1 45%', md: '0 0 auto' } }}>
                         <Typography variant="caption" color="text.secondary" display="block">
                           {t('alltask.status')}
                         </Typography>
@@ -514,7 +519,7 @@ const downloadAttachment = async (attachment) => {
                       </Box>
 
                       {/* Team Members */}
-                      <Box sx={{ minWidth: 80, display: 'flex', justifyContent: 'center' }}>
+                      <Box sx={{ minWidth: { xs: 'auto', md: 80 }, display: 'flex', justifyContent: { xs: 'flex-start', md: 'center' } }}>
                         {task.assignees && task.assignees.length > 0 ? (
                           <AvatarGroup 
                             max={3} 

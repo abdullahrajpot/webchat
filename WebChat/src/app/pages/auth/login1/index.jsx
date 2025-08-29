@@ -80,9 +80,9 @@ export default function Login1() {
           <LoginForm />
 
           <Typography textAlign={"center"} variant={"body1"} mb={1}>
-            {t("login.account")}{" "}
+            {t("login.donthaveaccount")}{" "}
             <Link underline="none" to={"/auth/signup-1"}>
-              {t("login.recover")}
+              {t("login.signup")}
             </Link>
           </Typography>
         </CardContent>

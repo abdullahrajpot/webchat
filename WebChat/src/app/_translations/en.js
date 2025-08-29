@@ -16,6 +16,7 @@ export const enTranslation = {
     password: "Password",
     rememberMe: "Remember Me",
     signIn: "Sign In",
+    signup: "Sign Up",
     content: "Content",
     forgot1: "Forgot 1",
     forgotPassword: "Forgot Password",
@@ -23,6 +24,7 @@ export const enTranslation = {
     other: "Other",
     loggedIn: "Logged In",
     account: "Account",
+    donthaveaccount: "Don't have an account?",
   },
  assigntask: {
   createnewtask: "Create New Task",

@@ -16,6 +16,8 @@ export const itTranslation = {
     password: "Passwort",
     rememberMe: "erinnere dich an mich",
     signIn: "anmelden",
+    signup: "Registrati",
+
     content: "Inhalt",
     forgot1: "vergessen1",
     forgotPassword: "Passwort vergessen",
@@ -23,6 +25,7 @@ export const itTranslation = {
     other: "andere",
     loggedIn: "eingeloggt",
     account: "Konto",
+    donthaveaccount: "Non hai un account?",
   },
   assigntask: {
     createnewtask: "Neue Aufgabe erstellen",
