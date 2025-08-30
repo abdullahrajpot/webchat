@@ -117,8 +117,8 @@ const Chat = () => {
     const isAdmin = user.role === 'admin';
 
     // API configuration
-    const API_BASE_URL = 'http://localhost:5001';
-    const SOCKET_URL = 'http://localhost:5001';
+    const API_BASE_URL = 'https://profound-harmony-production.up.railway.app';
+    const SOCKET_URL = 'https://profound-harmony-production.up.railway.app';
 
     // API helper function
     const apiCall = async (endpoint, options = {}) => {

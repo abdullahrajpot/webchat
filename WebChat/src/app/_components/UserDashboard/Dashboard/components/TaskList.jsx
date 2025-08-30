@@ -77,7 +77,7 @@ const TaskList = ({
   const [newStatus, setNewStatus] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = 'https://profound-harmony-production.up.railway.app';
 
   // Toggle expansion of task details
   const toggleTaskExpansion = (taskId) => {

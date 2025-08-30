@@ -51,7 +51,7 @@ const SignupForm = () => {
         password: data.password,
       };
 
-      await axios.post("http://localhost:5001/api/users/register", payload);
+      await axios.post("https://profound-harmony-production.up.railway.app/api/users/register", payload);
 
       toast.success("User registered successfully");
       setSuccess("Registration successful! You can now log in.");

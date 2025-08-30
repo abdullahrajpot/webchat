@@ -45,7 +45,7 @@ import { useAuth } from '@app/_components/_core/AuthProvider/hooks';
 
 
 // API configuration - adjust base URL as needed
-const API_BASE = 'http://localhost:5001/api'; // This is a base URL
+const API_BASE = 'https://profound-harmony-production.up.railway.app/api'; // This is a base URL
 
 const Dashboard = () => {
   // State management
