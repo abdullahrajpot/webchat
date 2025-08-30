@@ -46,7 +46,7 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
-    "@babel/plugin-transform-remove-console": "^7.24.1",
+"babel-plugin-transform-remove-console": "^6.9.4",
     "@vitejs/plugin-react": "^4.2.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
