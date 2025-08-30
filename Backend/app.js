@@ -15,7 +15,7 @@ const server = http.createServer(app);
 // Socket.io setup with proper CORS
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || ["http://localhost:3002", "http://localhost:3001", "http://localhost:3003", "http://localhost:3000"],
+    origin: process.env.FRONTEND_URL || ["http://localhost:3002", "http://localhost:3001", "http://localhost:3003", "http://localhost:3000", 'https://webchat-dev.vercel.app'],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
@@ -32,7 +32,7 @@ const auth = require('./middleware/auth');
 
 // CORS middleware - MUST be before routes
 app.use(cors({
-  origin: process.env.FRONTEND_URL || ["http://localhost:3001", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"],
+  origin: process.env.FRONTEND_URL || ["http://localhost:3001", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000", 'https://webchat-dev.vercel.app'],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"]
