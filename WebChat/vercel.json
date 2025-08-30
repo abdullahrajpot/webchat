@@ -18,10 +18,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "src/app/pages/**/*.jsx": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
