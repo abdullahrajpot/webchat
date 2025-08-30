@@ -1,30 +1,131 @@
-# React + TypeScript + Vite
+# WebChat - Task Management & Chat Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern React application built with Vite, Material-UI, and Socket.IO for real-time chat and task management.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 User Authentication & Authorization
+- 💬 Real-time Chat with File Sharing
+- 📋 Task Management System
+- 📊 Dashboard with Analytics
+- 🌐 Multi-language Support
+- 📱 Responsive Design
+- 🎨 Modern UI with Material-UI
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- **Frontend**: React 18, Vite, Material-UI
+- **State Management**: React Hooks
+- **Routing**: React Router DOM
+- **Real-time**: Socket.IO Client
+- **HTTP Client**: Axios
+- **Internationalization**: i18next
+- **Forms**: React Hook Form + Yup
+- **Charts**: Recharts
 
-- Configure the top-level `parserOptions` property like this:
+## Getting Started
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+### Prerequisites
+
+- Node.js >= 18.0.0
+- npm >= 8.0.0
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd WebChat
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment variables:
+```bash
+cp .env.example .env.local
+```
+
+4. Start development server:
+```bash
+npm run dev
+```
+
+## Deployment
+
+### Vercel Deployment
+
+This project is configured for easy deployment on Vercel:
+
+1. **Connect Repository**: Link your GitHub repository to Vercel
+2. **Build Settings**: The project uses the following build configuration:
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
+
+3. **Environment Variables**: Set the following in Vercel dashboard:
+   ```
+   VITE_API_BASE_URL=your-api-url
+   VITE_SOCKET_URL=your-socket-url
+   ```
+
+4. **Deploy**: Vercel will automatically deploy on every push to main branch
+
+### Build Configuration
+
+The project includes optimized build settings:
+
+- **Code Splitting**: Automatic chunk splitting for better performance
+- **Console Removal**: Console statements are removed in production
+- **Minification**: Terser minification for smaller bundle sizes
+- **Caching**: Optimized static asset caching
+
+### Troubleshooting Deployment Issues
+
+If you encounter deployment errors:
+
+1. **Check Build Logs**: Review the build output in Vercel dashboard
+2. **Verify Dependencies**: Ensure all dependencies are in `package.json`
+3. **Environment Variables**: Confirm all required env vars are set
+4. **Node Version**: Ensure Node.js version is >= 18.0.0
+
+Common Issues:
+- **FUNCTION_THROTTLED**: Increase function timeout in `vercel.json`
+- **BUILD_FAILED**: Check for missing dependencies or syntax errors
+- **ROUTING_ISSUES**: Verify `vercel.json` rewrite rules
+
+## Project Structure
+
+```
+src/
+├── app/                    # Main application code
+│   ├── _components/       # Shared components
+│   ├── _config/          # Configuration files
+│   ├── _layouts/         # Layout components
+│   ├── _routes/          # Routing configuration
+│   ├── pages/            # Page components
+│   └── _styles/          # Global styles
+├── @jumbo/               # Jumbo UI components
+└── @assets/              # Static assets
+```
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
