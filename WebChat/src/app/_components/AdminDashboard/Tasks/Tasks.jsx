@@ -89,7 +89,7 @@ const Tasks = ({ onTaskCreated }) => {
       throw new Error('No authentication token available');
     }
     
-    const response = await axios.get('http://localhost:5001/api/users', {
+    const response = await axios.get('https://profound-harmony-production.up.railway.app/api/users', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -132,7 +132,7 @@ const Tasks = ({ onTaskCreated }) => {
         form.append('attachments', JSON.stringify(preexisting));
       }
 
-      const response = await axios.post('http://localhost:5001/api/tasks', form, {
+      const response = await axios.post('https://profound-harmony-production.up.railway.app/api/tasks', form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -144,7 +144,7 @@ const Tasks = ({ onTaskCreated }) => {
       attachments: (taskData.attachments || []).filter(a => a && (a.url || a.fileUrl || a.path || a.file_path))
     };
 
-    const response = await axios.post('http://localhost:5001/api/tasks', sanitized, {
+    const response = await axios.post('https://profound-harmony-production.up.railway.app/api/tasks', sanitized, {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     });
     return response.data;
